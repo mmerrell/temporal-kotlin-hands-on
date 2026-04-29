@@ -17,14 +17,14 @@ public class InventoryReservationWorkflowImpl implements InventoryReservationWor
     private static final Logger log = Workflow.getLogger(InventoryReservationWorkflowImpl.class);
 
     private static final List<String> WAREHOUSES = Arrays.asList(
-        "WH-INCHEON", "WH-BUCHEON", "WH-DAEJEON",
-        "WH-BUSAN",   "WH-GWANGJU", "WH-SEJONG"
+        "WH-CHICAGO", "WH-SANTIAGO", "WH-AMSTERDAM",
+        "WH-NAIROBI", "WH-SINGAPORE", "WH-SYDNEY"
     );
 
     private final WarehouseActivities warehouseActivities = Workflow.newActivityStub(
         WarehouseActivities.class,
         ActivityOptions.newBuilder()
-            .setStartToCloseTimeout(Duration.ofSeconds(10))
+            .setStartToCloseTimeout(Duration.ofSeconds(30))
             .build()
     );
 

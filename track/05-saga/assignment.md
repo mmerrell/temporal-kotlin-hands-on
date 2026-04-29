@@ -1,8 +1,10 @@
 ---
 slug: saga
+id: oozxewo2hysx
 type: challenge
 title: 'Exercise 5: The Saga Pattern'
-teaser: Implement compensating transactions so multi-step workflows clean up after themselves on failure.
+teaser: Implement compensating transactions so multi-step workflows clean up after
+  themselves on failure.
 notes:
 - type: text
   contents: |-
@@ -26,20 +28,24 @@ notes:
 
     Hit **Start** when you're ready.
 tabs:
-- title: VS Code
+- id: tmprzixga4ng
+  title: VS Code
   type: service
   hostname: workshop-host
   path: ?folder=/workspace/exercise&openFile=/workspace/exercise/src/main/java/fulfillment/FulfillmentWorkflowImpl.java
   port: 8443
-- title: Terminal 1 - Worker
+- id: 95qdga1qhrae
+  title: Terminal 1 - Worker
   type: terminal
   hostname: workshop-host
   workdir: /workspace/exercise
-- title: Terminal 2 - Starter
+- id: xfu3ljncq7ku
+  title: Terminal 2 - Starter
   type: terminal
   hostname: workshop-host
   workdir: /workspace/exercise
-- title: Temporal Web UI
+- id: qslyvye3rsmg
+  title: Temporal Web UI
   type: service
   hostname: workshop-host
   path: /

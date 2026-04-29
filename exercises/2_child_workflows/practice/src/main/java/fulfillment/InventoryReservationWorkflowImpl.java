@@ -14,8 +14,8 @@ public class InventoryReservationWorkflowImpl implements InventoryReservationWor
     private static final Logger log = Workflow.getLogger(InventoryReservationWorkflowImpl.class);
 
     private static final List<String> WAREHOUSES = Arrays.asList(
-        "WH-INCHEON", "WH-BUCHEON", "WH-DAEJEON",
-        "WH-BUSAN",   "WH-GWANGJU", "WH-SEJONG"
+        "WH-CHICAGO", "WH-SANTIAGO", "WH-AMSTERDAM",
+        "WH-NAIROBI", "WH-SINGAPORE", "WH-SYDNEY"
     );
 
     // TODO Part A: Create a WarehouseActivities stub with a 10-second StartToCloseTimeout.
