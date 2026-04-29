@@ -1,0 +1,4 @@
+#!/bin/bash
+cp -r /workspace/solution/src/. /workspace/exercise/src/
+cd /workspace/exercise && mvn compile -q
+echo "Solution applied. Review FulfillmentWorkflowImpl.java — note the try/catch saga structure and the cancelOrder signal handler."

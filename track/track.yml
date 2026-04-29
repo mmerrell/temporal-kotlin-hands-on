@@ -2,9 +2,9 @@ slug: temporal-java-hands-on
 id: wtrbra2ndbvf
 title: Temporal Java SDK – Hands-On Lab
 teaser: Build a durable order-fulfillment system with the Temporal Java SDK — activities,
-  child workflows, parallel fan-out, and cost optimization.
+  child workflows, parallel fan-out, cost optimization, and the Saga pattern.
 description: |-
-  Four progressive coding challenges using the Temporal Java SDK. Each challenge drops you into a partially-implemented order fulfillment workflow and asks you to fill in the missing pieces.
+  Five progressive coding challenges using the Temporal Java SDK. Each challenge drops you into a partially-implemented order fulfillment workflow and asks you to fill in the missing pieces.
 
   **What you'll build:**
 
@@ -12,6 +12,7 @@ description: |-
   - **Exercise 2 – Child Workflows:** Extract inventory reservation into a dedicated child workflow with its own history and retry boundary.
   - **Exercise 3 – Parallel Activities:** Fan out warehouse checks concurrently with `Async.function()` and `Promise.allOf()`.
   - **Exercise 4 – Cost Optimization:** Move fast in-process steps to Local Activities to reduce Temporal Cloud Actions.
+  - **Exercise 5 – Saga Pattern:** Implement compensating transactions so multi-step workflows clean up after themselves on failure or cancellation.
 
   Each challenge includes a **Web UI** tab so you can watch your workflows execute in real time, and a **Solve** button if you get stuck.
 
@@ -24,8 +25,8 @@ tags:
 owner: temporal
 developers:
 - marcus.merrell@temporal.io
-idle_timeout: 600
-timelimit: 7200
+idle_timeout: 1800
+timelimit: 9000
 lab_config:
   sidebar_enabled: true
   feedback_recap_enabled: true
@@ -34,5 +35,5 @@ lab_config:
   hideStopButton: false
   default_layout: AssignmentLeft
   default_layout_sidebar_size: 35
-checksum: "13632164651203635854"
+checksum: "9512169618734564388"
 enhanced_loading: false

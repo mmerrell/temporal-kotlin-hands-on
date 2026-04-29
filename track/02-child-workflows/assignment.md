@@ -44,7 +44,7 @@ tabs:
   path: /
   port: 8080
 difficulty: basic
-timelimit: 2400
+timelimit: 3600
 enhanced_loading: null
 ---
 
@@ -66,10 +66,16 @@ In `InventoryReservationWorkflowImpl.java`, replace the `null` stub:
 private final WarehouseActivities warehouseActivities = Workflow.newActivityStub(
     WarehouseActivities.class,
     ActivityOptions.newBuilder()
-        .setStartToCloseTimeout(Duration.ofSeconds(15))
+        .setStartToCloseTimeout(Duration.ofSeconds(30))
         .build()
 );
 ```
+
+> **Note:** Each warehouse check simulates a 5-second network call, and stock is only
+> available at the 5th and 6th warehouses. Serial search takes ~25 seconds — that's intentional.
+> Watch the Web UI while it runs and notice each warehouse being checked one at a time
+> (Chicago → Santiago → Amsterdam → Nairobi → Singapore → Sydney).
+> Exercise 3 will fix this.
 
 ***
 

@@ -1,0 +1,89 @@
+#!/bin/bash
+# check-shell for Exercise 5: Saga Pattern
+#
+# Verifies in FulfillmentWorkflowImpl.java:
+#   1. try block present
+#   2. catch block present
+#   3. reserveInventory called
+#   4. processPayment called
+#   5. dispatchToFulfillment called
+#   6. refundPayment called in catch
+#   7. releaseInventory called in catch
+#   8. refundPayment appears BEFORE releaseInventory (reverse order)
+#   9. Project compiles
+
+EXERCISE_DIR="/workspace/exercise"
+WORKFLOW_IMPL="$EXERCISE_DIR/src/main/java/fulfillment/FulfillmentWorkflowImpl.java"
+
+fail() { echo "FAIL: $1"; exit 1; }
+pass() { echo "PASS: $1"; }
+
+# ─── Check 1: try block present ──────────────────────────────────────────────
+if ! grep -qE "try\s*\{" "$WORKFLOW_IMPL"; then
+  fail "No try block found in processOrder(). Wrap the three activity calls in try/catch."
+fi
+pass "try block present"
+
+# ─── Check 2: catch block present ────────────────────────────────────────────
+if ! grep -q "catch" "$WORKFLOW_IMPL"; then
+  fail "No catch block found. Add catch (Exception e) { ... } after the try block."
+fi
+pass "catch block present"
+
+# ─── Check 3: reserveInventory called ────────────────────────────────────────
+if ! grep -q "activities\.reserveInventory" "$WORKFLOW_IMPL"; then
+  fail "Missing activities.reserveInventory(order). Add it as the first step inside the try block."
+fi
+pass "activities.reserveInventory() called"
+
+# ─── Check 4: processPayment called ──────────────────────────────────────────
+if ! grep -q "activities\.processPayment" "$WORKFLOW_IMPL"; then
+  fail "Missing activities.processPayment(order). Add it as the second step inside the try block."
+fi
+pass "activities.processPayment() called"
+
+# ─── Check 5: dispatchToFulfillment called ───────────────────────────────────
+if ! grep -q "activities\.dispatchToFulfillment" "$WORKFLOW_IMPL"; then
+  fail "Missing activities.dispatchToFulfillment(). Add it as the third step inside the try block."
+fi
+pass "activities.dispatchToFulfillment() called"
+
+# ─── Check 6: refundPayment called ───────────────────────────────────────────
+if ! grep -q "activities\.refundPayment" "$WORKFLOW_IMPL"; then
+  fail "Missing activities.refundPayment() in the catch block. Add it to compensate for a completed payment."
+fi
+pass "activities.refundPayment() called"
+
+# ─── Check 7: releaseInventory called ────────────────────────────────────────
+if ! grep -q "activities\.releaseInventory" "$WORKFLOW_IMPL"; then
+  fail "Missing activities.releaseInventory() in the catch block. Add it to compensate for a completed inventory reservation."
+fi
+pass "activities.releaseInventory() called"
+
+# ─── Check 8: refund appears before release (reverse order) ──────────────────
+refund_line=$(grep -n "activities\.refundPayment" "$WORKFLOW_IMPL" | head -1 | cut -d: -f1)
+release_line=$(grep -n "activities\.releaseInventory" "$WORKFLOW_IMPL" | head -1 | cut -d: -f1)
+
+if [[ -z "$refund_line" || -z "$release_line" ]]; then
+  fail "Could not verify compensation order. Ensure both refundPayment and releaseInventory are present."
+fi
+
+if [[ "$refund_line" -ge "$release_line" ]]; then
+  fail "Compensations are in the wrong order. refundPayment (step 2 undo) must come BEFORE releaseInventory (step 1 undo). Run compensations in reverse order of the forward steps."
+fi
+pass "Compensation order correct (refund before release)"
+
+# ─── Check 9: Compile ────────────────────────────────────────────────────────
+echo "Running mvn compile..."
+cd "$EXERCISE_DIR"
+if ! mvn compile -q 2>&1; then
+  fail "Project does not compile. Fix compilation errors above and try again."
+fi
+pass "Project compiles successfully"
+
+echo ""
+echo "✅ All checks passed!"
+echo "   Terminal 1: mvn compile exec:java -Dexec.mainClass=\"fulfillment.FulfillmentWorker\""
+echo "   Terminal 2: mvn exec:java -Dexec.mainClass=\"fulfillment.Starter\""
+echo "   Open fulfillment-ORD-1005 in the Web UI and look for refundPayment and"
+echo "   releaseInventory events after a dispatch failure."
