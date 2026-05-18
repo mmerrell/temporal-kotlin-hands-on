@@ -104,17 +104,19 @@ throw ApplicationFailure.newNonRetryableFailure("No stock available", "OutOfStoc
 
 ### Part D – Run it and compare
 
-**Terminal 1 - Worker:**
-```
-mvn compile exec:java -Dexec.mainClass="fulfillment.FulfillmentWorker"
-```
+1. Click the [button label="Terminal 1 - Worker" background="#444CE7"](tab-1) tab and start the Worker:
 
-**Terminal 2 - Starter:**
-```
-mvn exec:java -Dexec.mainClass="fulfillment.Starter"
-```
+   ```bash,run
+   mvn compile exec:java -Dexec.mainClass="fulfillment.FulfillmentWorker"
+   ```
 
-In the **Web UI**, open `inventory-ORD-1003`. Look at the Event History —
+2. Click the [button label="Terminal 2 - Starter" background="#444CE7"](tab-2) tab and run the Starter:
+
+   ```bash,run
+   mvn exec:java -Dexec.mainClass="fulfillment.Starter"
+   ```
+
+In the [button label="Temporal Web UI" background="#444CE7"](tab-3), open `inventory-ORD-1003`. Look at the Event History —
 all six `ActivityTaskScheduled` events appear nearly simultaneously.
 Compare with Exercise 2 where they were staggered.
 

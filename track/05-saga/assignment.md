@@ -121,18 +121,20 @@ return new OrderResult(order.getOrderId(), "FAILED",
 
 ### Part D – Run and observe
 
-**Terminal 1 - Worker:**
-```
-mvn compile exec:java -Dexec.mainClass="fulfillment.FulfillmentWorker"
-```
+1. Click the [button label="Terminal 1 - Worker" background="#444CE7"](tab-1) tab and start the Worker:
 
-**Terminal 2 - Starter:**
-```
-mvn exec:java -Dexec.mainClass="fulfillment.Starter"
-```
+   ```bash,run
+   mvn compile exec:java -Dexec.mainClass="fulfillment.FulfillmentWorker"
+   ```
+
+2. Click the [button label="Terminal 2 - Starter" background="#444CE7"](tab-2) tab and run the Starter:
+
+   ```bash,run
+   mvn exec:java -Dexec.mainClass="fulfillment.Starter"
+   ```
 
 `dispatchToFulfillment` fails 30% of the time. Run the Starter a few times until
-you see a failure. In the **Web UI**, open `fulfillment-ORD-1005` and look at the
+you see a failure. In the [button label="Temporal Web UI" background="#444CE7"](tab-3), open `fulfillment-ORD-1005` and look at the
 Event History — you should see `refundPayment` and `releaseInventory` activity
 events immediately following the dispatch failure.
 

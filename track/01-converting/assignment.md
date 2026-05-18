@@ -84,17 +84,19 @@ In `FulfillmentWorkflowImpl.java`:
 
 Once your code compiles, start both processes:
 
-**Terminal 1 - Worker:**
-```
-mvn compile exec:java -Dexec.mainClass="fulfillment.FulfillmentWorker"
-```
+1. Click the [button label="Terminal 1 - Worker" background="#444CE7"](tab-1) tab and start the Worker:
 
-**Terminal 2 - Starter:**
-```
-mvn exec:java -Dexec.mainClass="fulfillment.Starter"
-```
+   ```bash,run
+   mvn compile exec:java -Dexec.mainClass="fulfillment.FulfillmentWorker"
+   ```
 
-Open the **Temporal Web UI** tab and find workflow `fulfillment-ORD-1001`.
+2. Click the [button label="Terminal 2 - Starter" background="#444CE7"](tab-2) tab and run the Starter:
+
+   ```bash,run
+   mvn exec:java -Dexec.mainClass="fulfillment.Starter"
+   ```
+
+Open the [button label="Temporal Web UI" background="#444CE7"](tab-3) tab and find workflow `fulfillment-ORD-1001`.
 Try killing the Worker mid-execution (Ctrl+C in Terminal 1) and restarting it — what happens?
 
 ***

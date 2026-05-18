@@ -108,17 +108,19 @@ String reservationId = inventoryWorkflow.reserve(order.getItemSku(), order.getQu
 
 ### Part D – Run it
 
-**Terminal 1 - Worker:**
-```
-mvn compile exec:java -Dexec.mainClass="fulfillment.FulfillmentWorker"
-```
+1. Click the [button label="Terminal 1 - Worker" background="#444CE7"](tab-1) tab and start the Worker:
 
-**Terminal 2 - Starter:**
-```
-mvn exec:java -Dexec.mainClass="fulfillment.Starter"
-```
+   ```bash,run
+   mvn compile exec:java -Dexec.mainClass="fulfillment.FulfillmentWorker"
+   ```
 
-In the **Web UI**, find both `fulfillment-ORD-1002` and `inventory-ORD-1002`.
+2. Click the [button label="Terminal 2 - Starter" background="#444CE7"](tab-2) tab and run the Starter:
+
+   ```bash,run
+   mvn exec:java -Dexec.mainClass="fulfillment.Starter"
+   ```
+
+In the [button label="Temporal Web UI" background="#444CE7"](tab-3), find both `fulfillment-ORD-1002` and `inventory-ORD-1002`.
 Click into each — notice the child has its own separate Event History.
 
 ***

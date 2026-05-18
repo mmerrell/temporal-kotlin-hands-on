@@ -100,17 +100,19 @@ These run synchronously in the Worker process — no round-trip to the Temporal 
 
 ### Part C – Compare Event Histories
 
-**Terminal 1 - Worker:**
-```
-mvn compile exec:java -Dexec.mainClass="fulfillment.FulfillmentWorker"
-```
+1. Click the [button label="Terminal 1 - Worker" background="#444CE7"](tab-1) tab and start the Worker:
 
-**Terminal 2 - Starter:**
-```
-mvn exec:java -Dexec.mainClass="fulfillment.Starter"
-```
+   ```bash,run
+   mvn compile exec:java -Dexec.mainClass="fulfillment.FulfillmentWorker"
+   ```
 
-In the **Web UI**, open `fulfillment-ORD-1004` and inspect the Event History.
+2. Click the [button label="Terminal 2 - Starter" background="#444CE7"](tab-2) tab and run the Starter:
+
+   ```bash,run
+   mvn exec:java -Dexec.mainClass="fulfillment.Starter"
+   ```
+
+In the [button label="Temporal Web UI" background="#444CE7"](tab-3), open `fulfillment-ORD-1004` and inspect the Event History.
 
 Look for:
 - `MarkerRecorded` — one event each for `validateOrder` and `fraudCheck` (local)
