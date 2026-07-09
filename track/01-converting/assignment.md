@@ -21,23 +21,23 @@ tabs:
 - id: beatbahvb8mh
   title: VS Code
   type: service
-  hostname: workshop-host
+  hostname: workshop
   path: ?folder=/workspace/exercise&openFile=/workspace/exercise/src/main/java/fulfillment/FulfillmentPipeline.java&openFile=/workspace/exercise/src/main/java/fulfillment/FulfillmentActivitiesImpl.java
   port: 8443
 - id: aucxy2upmgp6
   title: Terminal 1 - Worker
   type: terminal
-  hostname: workshop-host
+  hostname: workshop
   workdir: /workspace/exercise
 - id: owpxr5lnaa1c
   title: Terminal 2 - Starter
   type: terminal
-  hostname: workshop-host
+  hostname: workshop
   workdir: /workspace/exercise
 - id: beuekqadj4dh
   title: Temporal Web UI
   type: service
-  hostname: workshop-host
+  hostname: workshop
   path: /
   port: 8080
 difficulty: basic

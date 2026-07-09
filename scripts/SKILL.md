@@ -12,11 +12,11 @@ each session.
 
 A set of Instruqt hands-on coding labs for teaching the Temporal SDK. Each lab
 is a self-contained coding exercise where learners implement missing pieces of
-a Temporal workflow in a browser-based VM with VS Code, terminals, and a live
-Temporal server.
+a Temporal workflow in a browser-based container with VS Code, terminals, and a
+live Temporal server.
 
 Current tracks:
-- `temporal-java-hands-on` (live) — 4 exercises, Java SDK, order fulfillment scenario
+- `temporal-java-hands-on` (live) — 5 exercises, Java SDK, order fulfillment scenario
 - Python AI agents track (planned)
 - Additional Java modules planned: Continue-As-New, encryption, claim check pattern
 
@@ -33,45 +33,48 @@ temporal-java-hands-on/           github.com/mmerrell/temporal-java-hands-on
 ├── .github/workflows/
 │   └── build-image.yml           Rebuilds Docker image when exercises/** or Dockerfile change
 ├── docker/
-│   └── Dockerfile                JDK 17 + Maven 3.9 + Temporal CLI + baked exercises
+│   └── Dockerfile                JDK 17 + Maven 3.9 + Temporal CLI + baked exercises (all 5)
 ├── exercises/
 │   ├── 1_converting/
 │   │   ├── practice/             Learner starting point (// TODO stubs)
 │   │   └── solution/             Reference implementation
 │   ├── 2_child_workflows/
 │   ├── 3_parallel_activities/
-│   └── 4_cost_optimization/
+│   ├── 4_cost_optimization/
+│   └── 5_saga/
 ├── scripts/
 │   └── bootstrap-exercises.sh   Populates exercises/ from any workshop repo
 └── track/                        Instruqt track definition
     ├── track.yml                 Track metadata
-    ├── config.yml                Shared VM config
+    ├── config.yml                Container config (workshop, 4096MB, ghcr.io image)
     ├── track_scripts/
-    │   └── setup-workshop-host  Installs everything, pulls image, warms Maven cache
+    │   └── setup-workshop        Starts Temporal dev server, wires /root/.bashrc
     ├── 01-converting/
     │   ├── assignment.md         Frontmatter (slug, tabs, notes) + Markdown content
-    │   ├── config.yml
-    │   ├── setup-workshop-host   Copies exercise into /workspace/exercise
-    │   ├── check-workshop-host   Source grep + mvn compile
-    │   ├── solve-workshop-host   Applies solution
-    │   └── cleanup-workshop-host No-op
+    │   ├── config.yml            Minimal (version: "3" only)
+    │   ├── setup-workshop        Copies exercise into /workspace/exercise
+    │   ├── check-workshop        Source grep + mvn compile
+    │   ├── solve-workshop        Applies solution
+    │   └── cleanup-workshop      No-op
     ├── 02-child-workflows/
     ├── 03-parallel-activities/
-    └── 04-cost-optimization/
+    ├── 04-cost-optimization/
+    └── 05-saga/
 ```
 
 ---
 
 ## Infrastructure
 
-**VM image:** `instruqt/docker-28-3` (Ubuntu with Docker pre-installed)
-**Docker image:** `ghcr.io/mmerrell/temporal-java-sandbox:latest` (public)
-**Temporal server:** Runs as systemd service inside the VM (`temporal server start-dev --ui-port 8080 --ip 0.0.0.0`)
-**VS Code:** `code-server` as systemd service on port 8443, with `vscjava.vscode-java-pack` installed
-**Maven cache:** Pre-warmed for all 8 pom files during track setup
+**Container image:** `ghcr.io/mmerrell/temporal-java-sandbox:latest` (public)
+**Container memory:** 4096MB
+**Temporal server:** Started via `nohup temporal server start-dev --ui-port 8080 --ip 0.0.0.0` in track setup script
+**VS Code:** `code-server` running inside the container on port 8443, with `vscjava.vscode-java-pack` pre-installed in the image
+**Maven cache:** Pre-warmed for all 10 pom files (practice + solution × 5) during Docker image build
 
-Each challenge has three tabs: VS Code (default), Terminal 1 - Worker, Terminal 2 - Starter, Temporal Web UI.
+Each challenge has four tabs: VS Code (tab-0, default), Terminal 1 - Worker (tab-1), Terminal 2 - Starter (tab-2), Temporal Web UI (tab-3).
 Exercise files land at `/workspace/exercise/src/main/java/fulfillment/`.
+Container hostname is `workshop` (not `workshop-host` — that was the old VM name).
 
 ---
 
@@ -97,6 +100,9 @@ Instruqt is strict about this format. Key rules Claude must follow:
 5. **`notes:`** is the pre-challenge splash screen (shown before learner clicks Start)
 6. **Assignment content** is plain Markdown after the closing `---`
 7. **`type: challenge`** for coding exercises (not `type: quiz`)
+8. **`hostname: workshop`** — use this, not `workshop-host` (old VM name)
+9. **`bash,run` code fences** execute the command in the active terminal tab on click: ` ```bash,run `
+10. **Tab-switch buttons** with Temporal blue: `[button label="Terminal 1 - Worker" background="#444CE7"](tab-1)`
 
 Example frontmatter structure:
 ```yaml
@@ -113,16 +119,16 @@ notes:
 tabs:
 - title: VS Code
   type: service
-  hostname: workshop-host
+  hostname: workshop
   port: 8443
   path: ?folder=/workspace/exercise
 - title: Terminal 1 - Worker
   type: terminal
-  hostname: workshop-host
+  hostname: workshop
   workdir: /workspace/exercise
 - title: Temporal Web UI
   type: service
-  hostname: workshop-host
+  hostname: workshop
   port: 8080
   path: /
 difficulty: basic
@@ -185,9 +191,6 @@ instruqt config get team          # Should return "temporal"
   time trying to solve this server-side — it can't be done without a custom
   VS Code extension or Instruqt platform support.
 
-- **Track startup time** is 5-10 minutes (setup script installs everything from scratch).
-  This is an Instruqt platform constraint for non-enterprise accounts.
-
 - **`instruqt track list`** doesn't work as expected with the current CLI version —
   use the Instruqt web UI to see available tracks.
 
@@ -202,8 +205,8 @@ instruqt config get team          # Should return "temporal"
 1. Create `exercises/N_topic/practice/` and `solution/` with pom.xml and src/
 2. Create `track/NN-topic/` directory
 3. Copy scripts from an existing challenge, update paths and exercise number
-4. Write `assignment.md` — no `id:` field, slug = directory minus `NN-` prefix
-5. Copy `config.yml` from an existing challenge (they're all identical)
+4. Write `assignment.md` — no `id:` field, slug = directory minus `NN-` prefix, hostname = `workshop`
+5. Add a minimal `config.yml` containing only `version: "3"`
 6. `git push` (triggers image rebuild for new exercise source)
 7. `cd track && instruqt track push`
 8. `instruqt track pull` to capture generated IDs

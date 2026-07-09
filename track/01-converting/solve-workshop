@@ -1,0 +1,4 @@
+#!/bin/bash
+cp -r /workspace/solution/src/. /workspace/exercise/src/
+cd /workspace/exercise && mvn compile -q
+echo "Solution applied. Review FulfillmentActivitiesImpl.java and FulfillmentWorkflowImpl.java."

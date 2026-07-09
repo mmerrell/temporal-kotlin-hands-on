@@ -1,6 +1,7 @@
 package fulfillment;
 
 import io.temporal.activity.ActivityOptions;
+import io.temporal.common.RetryOptions;
 import io.temporal.failure.ApplicationFailure;
 import io.temporal.workflow.Workflow;
 import org.slf4j.Logger;

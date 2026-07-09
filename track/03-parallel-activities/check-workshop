@@ -1,0 +1,46 @@
+#!/bin/bash
+EXERCISE_DIR="/workspace/exercise"
+INVENTORY_IMPL="$EXERCISE_DIR/src/main/java/fulfillment/InventoryReservationWorkflowImpl.java"
+
+fail() { echo "FAIL: $1"; exit 1; }
+pass() { echo "PASS: $1"; }
+
+if ! grep -q "Async\.function" "$INVENTORY_IMPL"; then
+  fail "InventoryReservationWorkflowImpl is missing Async.function(). Use it to launch each warehouse check concurrently."
+fi
+pass "Async.function() used for fan-out"
+
+if ! grep -q "Promise\.allOf" "$INVENTORY_IMPL"; then
+  fail "InventoryReservationWorkflowImpl is missing Promise.allOf(promises).get()."
+fi
+pass "Promise.allOf() barrier in place"
+
+if ! grep -q "\.get()" "$INVENTORY_IMPL"; then
+  fail "InventoryReservationWorkflowImpl is missing .get() calls to collect promise results."
+fi
+pass "Promise results collected with .get()"
+
+if grep -q "your fan-out code here" "$INVENTORY_IMPL"; then
+  fail "The placeholder comment is still present. Replace it with your Async.function() loop."
+fi
+pass "Placeholder code replaced"
+
+if ! grep -q "OutOfStock" "$INVENTORY_IMPL"; then
+  fail "InventoryReservationWorkflowImpl is missing the ApplicationFailure with type \"OutOfStock\"."
+fi
+pass "OutOfStock failure present"
+
+if grep -q "^        return null" "$INVENTORY_IMPL"; then
+  fail "reserve() still returns null. Implement the result-collection loop."
+fi
+pass "reserve() returns a real result"
+
+echo "Running mvn compile..."
+cd "$EXERCISE_DIR"
+if ! mvn compile -q 2>&1; then
+  fail "Project does not compile. Fix compilation errors above and try again."
+fi
+pass "Project compiles successfully"
+
+echo ""
+echo "All checks passed! Open inventory-ORD-1003 in the Web UI — all 6 activities scheduled in parallel."

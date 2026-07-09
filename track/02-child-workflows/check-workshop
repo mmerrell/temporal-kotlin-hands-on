@@ -1,0 +1,52 @@
+#!/bin/bash
+EXERCISE_DIR="/workspace/exercise"
+INVENTORY_IMPL="$EXERCISE_DIR/src/main/java/fulfillment/InventoryReservationWorkflowImpl.java"
+FULFILLMENT_IMPL="$EXERCISE_DIR/src/main/java/fulfillment/FulfillmentWorkflowImpl.java"
+
+fail() { echo "FAIL: $1"; exit 1; }
+pass() { echo "PASS: $1"; }
+
+if grep -q "= null" "$INVENTORY_IMPL" && ! grep -q "Workflow.newActivityStub" "$INVENTORY_IMPL"; then
+  fail "InventoryReservationWorkflowImpl is missing a WarehouseActivities stub. Create one with Workflow.newActivityStub()."
+fi
+pass "WarehouseActivities stub created"
+
+if ! grep -q "setStartToCloseTimeout\|StartToCloseTimeout" "$INVENTORY_IMPL"; then
+  fail "InventoryReservationWorkflowImpl is missing a StartToCloseTimeout on the ActivityOptions."
+fi
+pass "StartToCloseTimeout configured"
+
+if grep -q "return null" "$INVENTORY_IMPL"; then
+  fail "InventoryReservationWorkflowImpl.reserve() still returns null. Iterate over WAREHOUSES and return the first non-null result."
+fi
+pass "reserve() has a real implementation"
+
+if ! grep -q "OutOfStock" "$INVENTORY_IMPL"; then
+  fail "InventoryReservationWorkflowImpl is missing an ApplicationFailure with type \"OutOfStock\"."
+fi
+pass "OutOfStock failure thrown when no stock found"
+
+if ! grep -q "Workflow.newChildWorkflowStub" "$FULFILLMENT_IMPL"; then
+  fail "FulfillmentWorkflowImpl is missing Workflow.newChildWorkflowStub()."
+fi
+pass "Child workflow stub created in parent"
+
+if ! grep -q "ChildWorkflowOptions" "$FULFILLMENT_IMPL"; then
+  fail "FulfillmentWorkflowImpl is missing ChildWorkflowOptions. Set workflowId = \"inventory-\" + order.getOrderId()."
+fi
+pass "ChildWorkflowOptions configured"
+
+if grep -q "String reservationId = null" "$FULFILLMENT_IMPL"; then
+  fail "FulfillmentWorkflowImpl still has 'String reservationId = null'. Call the child workflow's reserve() method."
+fi
+pass "reservationId wired to child workflow result"
+
+echo "Running mvn compile..."
+cd "$EXERCISE_DIR"
+if ! mvn compile -q 2>&1; then
+  fail "Project does not compile. Fix compilation errors above and try again."
+fi
+pass "Project compiles successfully"
+
+echo ""
+echo "All checks passed! Look for both fulfillment-ORD-1002 and inventory-ORD-1002 in the Web UI."
