@@ -1,7 +1,7 @@
 # ============================================================
 # Save this file to:
 #   .github/workflows/build-image.yml
-# in the temporal-java-hands-on repo root.
+# in the temporal-kotlin-hands-on repo root.
 # ============================================================
 
 name: Build and Push Sandbox Image
@@ -23,7 +23,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: mmerrell/temporal-java-sandbox
+  IMAGE_NAME: mmerrell/temporal-kotlin-sandbox
 
 jobs:
   build-and-push:

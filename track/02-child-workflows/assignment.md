@@ -1,6 +1,6 @@
 ---
 slug: child-workflows
-id: uo7y4q9oaxf1
+id: pmicrhafgcdn
 type: challenge
 title: 'Exercise 2: Child Workflows'
 teaser: Decompose inventory reservation into a dedicated child workflow with its own
@@ -21,23 +21,22 @@ notes:
 
     Hit **Start** when you're ready.
 tabs:
-- id: dcp2kcuvdiyj
-  title: VS Code
-  type: service
+- id: ubv2xvpspuuf
+  title: Code Editor
+  type: code
   hostname: workshop
-  path: ?folder=/workspace/exercise&openFile=/workspace/exercise/src/main/java/fulfillment/FulfillmentWorkflowImpl.java&openFile=/workspace/exercise/src/main/java/fulfillment/InventoryReservationWorkflowImpl.java
-  port: 8443
-- id: 9w5vulsv78xr
+  path: /workspace/exercise
+- id: tuwuwbyk1ydt
   title: Terminal 1 - Worker
   type: terminal
   hostname: workshop
   workdir: /workspace/exercise
-- id: isksn9ka25v9
+- id: vk6xkdtczhfr
   title: Terminal 2 - Starter
   type: terminal
   hostname: workshop
   workdir: /workspace/exercise
-- id: u8avwbdct35o
+- id: eklmxe0t8hv6
   title: Temporal Web UI
   type: service
   hostname: workshop
@@ -51,24 +50,24 @@ enhanced_loading: null
 ## Exercise 2: Child Workflows
 
 You're working with two implementation files this time:
-- **`InventoryReservationWorkflowImpl.java`** — the child workflow (new, active tab)
-- **`FulfillmentWorkflowImpl.java`** — the parent workflow (calls the child)
+- **`InventoryReservationWorkflowImpl.kt`** — the child workflow (new, active tab)
+- **`FulfillmentWorkflowImpl.kt`** — the parent workflow (calls the child)
 
-Files are in `/workspace/exercise/src/main/java/fulfillment/`. Look for `// TODO` comments in both.
+Files are in `/workspace/exercise/src/main/kotlin/fulfillment/`. Look for `TODO(...)` markers in both.
 
 ***
 
 ### Part A – Create the WarehouseActivities stub
 
-In `InventoryReservationWorkflowImpl.java`, replace the `null` stub:
+In `InventoryReservationWorkflowImpl.kt`, replace the `null` stub:
 
-```java
-private final WarehouseActivities warehouseActivities = Workflow.newActivityStub(
-    WarehouseActivities.class,
+```kotlin
+private val warehouseActivities: WarehouseActivities = Workflow.newActivityStub(
+    WarehouseActivities::class.java,
     ActivityOptions.newBuilder()
         .setStartToCloseTimeout(Duration.ofSeconds(30))
         .build()
-);
+)
 ```
 
 > **Note:** Each warehouse check simulates a 5-second network call, and stock is only
@@ -85,23 +84,23 @@ In `reserve()`, iterate over `WAREHOUSES` and call `checkWarehouseInventory` for
 Return the **first non-null** result (first warehouse with stock wins).
 
 If all warehouses return null, throw a **non-retryable** `ApplicationFailure`:
-```java
-throw ApplicationFailure.newNonRetryableFailure("No stock available", "OutOfStock");
+```kotlin
+throw ApplicationFailure.newNonRetryableFailure("No stock available", "OutOfStock")
 ```
 
 ***
 
 ### Part C – Call the child from the parent
 
-In `FulfillmentWorkflowImpl.java`, replace the `null` stub for `reservationId`:
-```java
-InventoryReservationWorkflow inventoryWorkflow = Workflow.newChildWorkflowStub(
-    InventoryReservationWorkflow.class,
+In `FulfillmentWorkflowImpl.kt`, replace the `TODO(...)` stub for `reservationId`:
+```kotlin
+val inventoryWorkflow = Workflow.newChildWorkflowStub(
+    InventoryReservationWorkflow::class.java,
     ChildWorkflowOptions.newBuilder()
-        .setWorkflowId("inventory-" + order.getOrderId())
+        .setWorkflowId("inventory-${order.orderId}")
         .build()
-);
-String reservationId = inventoryWorkflow.reserve(order.getItemSku(), order.getQuantity());
+)
+val reservationId = inventoryWorkflow.reserve(order.itemSku, order.quantity)
 ```
 
 ***
@@ -111,13 +110,13 @@ String reservationId = inventoryWorkflow.reserve(order.getItemSku(), order.getQu
 1. Click the [button label="Terminal 1 - Worker" background="#444CE7"](tab-1) tab and start the Worker:
 
    ```bash,run
-   mvn compile exec:java -Dexec.mainClass="fulfillment.FulfillmentWorker"
+   gradle runWorker
    ```
 
 2. Click the [button label="Terminal 2 - Starter" background="#444CE7"](tab-2) tab and run the Starter:
 
    ```bash,run
-   mvn exec:java -Dexec.mainClass="fulfillment.Starter"
+   gradle runStarter
    ```
 
 In the [button label="Temporal Web UI" background="#444CE7"](tab-3), find both `fulfillment-ORD-1002` and `inventory-ORD-1002`.

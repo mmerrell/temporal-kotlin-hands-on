@@ -6,4 +6,4 @@ cp -r /opt/exercises/1_converting/practice /workspace/exercise
 cp -r /opt/exercises/1_converting/solution /workspace/solution
 
 echo "Exercise 1 ready."
-echo "Files are in /workspace/exercise/src/main/java/fulfillment/"
+echo "Files are in /workspace/exercise/src/main/kotlin/fulfillment/"

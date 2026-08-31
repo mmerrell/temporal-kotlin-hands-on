@@ -21,7 +21,7 @@ temporal server start-dev
 
 ## Part A: Create the Local Activity stub
 
-Open `FulfillmentWorkflowImpl.java`:
+Open `FulfillmentWorkflowImpl.kt`:
 
 1. Create `LocalActivityOptions` with a `StartToCloseTimeout` of 5 seconds
 2. Create a `LocalFulfillmentActivities` stub via `Workflow.newLocalActivityStub(...)`
@@ -32,19 +32,19 @@ Note: `LocalActivityOptions` not `ActivityOptions`, `newLocalActivityStub` not `
 
 Add these two calls at the top of `processOrder()`, before the child workflow:
 
-```java
-localActivities.validateOrder(order);
-localActivities.fraudCheck(order);
+```kotlin
+localActivities.validateOrder(order)
+localActivities.fraudCheck(order)
 ```
 
 ## Part C: Run It and Compare
 
 ```bash
 # Terminal 1
-mvn compile exec:java -Dexec.mainClass="fulfillment.FulfillmentWorker"
+gradle runWorker
 
 # Terminal 2
-mvn exec:java -Dexec.mainClass="fulfillment.Starter"
+gradle runStarter
 ```
 
 In the Web UI, open `fulfillment-ORD-1004` and inspect the Event History.

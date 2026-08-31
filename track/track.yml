@@ -1,27 +1,29 @@
-slug: temporal-java-hands-on
-id: wtrbra2ndbvf
-title: Temporal Java SDK – Hands-On Lab
-teaser: Build a durable order-fulfillment system with the Temporal Java SDK — activities,
-  child workflows, parallel fan-out, cost optimization, and the Saga pattern.
+slug: temporal-kotlin-hands-on
+id: khqnzcdrv70p
+title: Temporal Kotlin – Hands-On Lab
+teaser: Build a durable order-fulfillment system with the Temporal Java SDK from Kotlin
+  — activities, child workflows, parallel fan-out, the Saga pattern, and cutting
+  Temporal Cloud cost.
 description: |-
-  Five progressive coding challenges using the Temporal Java SDK. Each challenge drops you into a partially-implemented order fulfillment workflow and asks you to fill in the missing pieces.
+  Six progressive coding challenges using the Temporal Java SDK from Kotlin. Each challenge drops you into a partially-implemented order fulfillment workflow and asks you to fill in the missing pieces.
 
   **What you'll build:**
 
   - **Exercise 1 – Converting a Workflow:** Replace a fragile retry loop with Temporal Activities and a proper Workflow implementation.
   - **Exercise 2 – Child Workflows:** Extract inventory reservation into a dedicated child workflow with its own history and retry boundary.
   - **Exercise 3 – Parallel Activities:** Fan out warehouse checks concurrently with `Async.function()` and `Promise.allOf()`.
-  - **Exercise 4 – Cost Optimization:** Move fast in-process steps to Local Activities to reduce Temporal Cloud Actions.
-  - **Exercise 5 – Saga Pattern:** Implement compensating transactions so multi-step workflows clean up after themselves on failure or cancellation.
+  - **Exercise 4 – Local Activities:** Move fast in-process steps to Local Activities to reduce Temporal Cloud Actions.
+  - **Exercise 5 – Saga Pattern:** Implement compensating transactions so multi-step workflows clean up after themselves on failure.
+  - **Exercise 6 – Payloads, Timers, and Heartbeats:** Measure what one execution costs in Event History, then cut it — without weakening durability.
 
   Each challenge includes a **Web UI** tab so you can watch your workflows execute in real time, and a **Solve** button if you get stuck.
 
-  **Prerequisites:** Basic Java familiarity. No prior Temporal experience required — the exercises are self-guided.
+  **Prerequisites:** Basic Kotlin familiarity. No prior Temporal experience required — the exercises are self-guided.
 icon: https://storage.googleapis.com/instruqt-frontend/img/tracks/default.png
 tags:
 - temporal
+- kotlin
 - workflows
-- java
 owner: temporal
 developers:
 - marcus.merrell@temporal.io
@@ -35,5 +37,5 @@ lab_config:
   hideStopButton: false
   default_layout: AssignmentLeft
   default_layout_sidebar_size: 35
-checksum: "9201326305855282554"
+checksum: "7139051561018500342"
 enhanced_loading: false

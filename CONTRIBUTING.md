@@ -9,9 +9,9 @@ and the live track on Instruqt.
 ## How the Three Systems Fit Together
 
 ```
-GitHub repo (mmerrell/temporal-java-hands-on)
+GitHub repo (mmerrell/temporal-kotlin-hands-on)
     │
-    ├── exercises/          ← Exercise source code (Java)
+    ├── exercises/          ← Exercise source code (Kotlin)
     │                         Changes here trigger a Docker image rebuild
     │
     ├── docker/Dockerfile   ← Bakes exercises into the image
@@ -21,67 +21,80 @@ GitHub repo (mmerrell/temporal-java-hands-on)
                               Changes here go to Instruqt via CLI push
                               (no image rebuild needed)
 
-Docker image (ghcr.io/mmerrell/temporal-java-sandbox:latest)
+Docker image (ghcr.io/mmerrell/temporal-kotlin-sandbox:latest)
     │
-    └── /opt/exercises/     ← Baked-in exercise source
-                              Pulled at VM startup by setup-workshop-host
+    └── /opt/exercises/     ← Baked-in exercise source, plus JDK 17, Gradle,
+                              and the Temporal CLI — all pre-installed in the
+                              image so the container needs no setup on boot
 
-Instruqt (play.instruqt.com/temporal/tracks/temporal-java-hands-on)
+Instruqt (play.instruqt.com/temporal/tracks/temporal-kotlin-hands-on)
     │
-    └── Runs instruqt/docker-28-3 VM
-        setup-workshop-host pulls the Docker image and copies exercises
-        into /workspace/ at track start
+    └── Runs a single container named `workshop` (see track/config.yml)
+        track_scripts/setup-workshop stages /opt/exercises into /workspace
+        and starts the Temporal dev server when the track begins
 ```
 
 **The key rule:** `exercises/` and `docker/` changes need a Docker rebuild before
 they're visible in Instruqt. `track/` changes (scripts, assignment text) go live
 immediately after `instruqt track push`.
 
+**On the editor:** the learner's Code Editor tab is Instruqt's built-in native
+file editor (`type: code` in `assignment.md`), not VS Code / code-server. It
+reads/writes files directly in the `workshop` container with no extra service
+to install or wait on. It gives syntax highlighting but not autocomplete or
+inline compile errors — learners use the terminal (`gradle compileKotlin`) or
+the Check button for that.
+
 ---
 
 ## Repo Layout
 
 ```
-temporal-java-hands-on/
+temporal-kotlin-hands-on/
 ├── .github/workflows/
 │   └── build-image.yml         Rebuilds Docker image on push to main
 │                               when exercises/** or docker/Dockerfile change
 ├── docker/
-│   └── Dockerfile              Installs JDK 17, Maven, Temporal CLI,
+│   └── Dockerfile              Installs JDK 17, Gradle, Temporal CLI,
 │                               bakes exercises into /opt/exercises/,
-│                               pre-warms Maven dependency cache
+│                               pre-warms Gradle dependency cache
 ├── exercises/
 │   ├── 1_converting/
-│   │   ├── practice/           What learners start with (// TODO stubs)
-│   │   │   ├── pom.xml
-│   │   │   └── src/main/java/fulfillment/
+│   │   ├── practice/           What learners start with (TODO(...) stubs)
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/main/kotlin/fulfillment/
 │   │   └── solution/           Reference implementation
-│   │       ├── pom.xml
-│   │       └── src/main/java/fulfillment/
+│   │       ├── build.gradle.kts
+│   │       └── src/main/kotlin/fulfillment/
 │   ├── 2_child_workflows/
 │   ├── 3_parallel_activities/
-│   └── 4_cost_optimization/
+│   ├── 4_cost_optimization/
+│   ├── 5_saga/
+│   └── 6_cost_deep_dive/
 ├── scripts/
 │   └── bootstrap-exercises.sh  Copies exercises from a workshop repo
 │                               into exercises/ (run once per source repo)
 └── track/                      Instruqt track — push/pull with CLI
     ├── track.yml               Track metadata (slug, title, owner, timers)
-    ├── config.yml              Shared VM definition (instruqt/docker-28-3)
+    ├── config.yml              Container definition — one container, `workshop`
     ├── track_scripts/
-    │   └── setup-workshop-host Track-level setup: installs Java, Maven,
-    │                           Temporal CLI, code-server, Java extension,
-    │                           pulls Docker image, copies exercises,
-    │                           warms Maven cache. Runs ONCE at track start.
+    │   └── setup-workshop      Track-level setup: stages /opt/exercises into
+    │                           /workspace, starts the Temporal dev server.
+    │                           Runs ONCE at track start. (Everything else —
+    │                           JDK, Gradle, Temporal CLI — is already baked
+    │                           into the Docker image.)
     ├── 01-converting/
     │   ├── assignment.md       Learner instructions + tab definitions
-    │   ├── config.yml          Per-challenge VM config (currently same as root)
-    │   ├── setup-workshop-host Copies practice/ to /workspace/exercise
-    │   ├── check-workshop-host Source grep + mvn compile validation
-    │   ├── solve-workshop-host Copies solution/ over practice/ src
-    │   └── cleanup-workshop-host  No-op (VM is recycled by Instruqt)
+    │   ├── config.yml          Per-challenge config (currently `version: "3"` only)
+    │   ├── setup-workshop      Copies practice/ to /workspace/exercise
+    │   ├── check-workshop      Source grep + gradle compileKotlin validation
+    │   ├── solve-workshop      Copies solution/ over practice/ src
+    │   └── cleanup-workshop    No-op (container is recycled by Instruqt)
     ├── 02-child-workflows/
     ├── 03-parallel-activities/
-    └── 04-cost-optimization/
+    ├── 04-cost-optimization/
+    ├── 05-saga/
+    └── 06-cost-deep-dive/
 ```
 
 ---
@@ -103,18 +116,17 @@ notes:                    # Pre-challenge splash screen (shown before Start)
   contents: |-
     Markdown content here.
 tabs:                     # Defines the tabs shown during the challenge
-- title: VS Code
-  type: service
-  hostname: workshop-host
-  port: 8443
-  path: ?folder=/workspace/exercise
+- title: Code Editor
+  type: code
+  hostname: workshop
+  path: /workspace/exercise
 - title: Terminal 1 - Worker
   type: terminal
-  hostname: workshop-host
+  hostname: workshop
   workdir: /workspace/exercise
 - title: Temporal Web UI
   type: service
-  hostname: workshop-host
+  hostname: workshop
   port: 8080
   path: /
 difficulty: basic         # basic | intermediate | advanced
@@ -132,25 +144,30 @@ Use *** for horizontal rules — never --- (Instruqt parses --- as YAML delimite
 - Tab `id` fields are generated by Instruqt — don't add them manually for new tabs
 - The first tab in the list is the active tab on challenge load
 - `slug` must equal the directory name with the `NN-` prefix stripped
+- `hostname:` on every tab and script must match a container name declared in
+  `config.yml` (currently just `workshop`) — `instruqt track validate` will
+  reject any script or tab referencing an unknown hostname
 
 ---
 
 ## Lifecycle Scripts
 
-Each challenge has four scripts. All are named `*-workshop-host` to match the
-VM hostname defined in `config.yml`.
+Each challenge has four scripts, named to match the `workshop` container
+defined in `config.yml`.
 
 | Script | When it runs | What it does |
 |---|---|---|
-| `setup-workshop-host` | Challenge starts | Copies `practice/` to `/workspace/exercise`, `solution/` to `/workspace/solution` |
-| `check-workshop-host` | Learner clicks Check | Source grep assertions + `mvn compile` |
-| `solve-workshop-host` | Learner clicks Solve | Copies `solution/src/` over `exercise/src/`, recompiles |
-| `cleanup-workshop-host` | Challenge ends | No-op — VM is recycled |
+| `setup-workshop` | Challenge starts | Copies `practice/` to `/workspace/exercise`, `solution/` to `/workspace/solution` |
+| `check-workshop` | Learner clicks Check | Source grep assertions + `gradle compileKotlin` |
+| `solve-workshop` | Learner clicks Solve | Copies `solution/src/` over `exercise/src/`, recompiles |
+| `cleanup-workshop` | Challenge ends | No-op — container is recycled |
 
-The track-level `track_scripts/setup-workshop-host` runs **once** when the track
-starts (before any challenge). It installs all dependencies and pulls the Docker
-image. Per-challenge `setup-workshop-host` scripts are lightweight — they just
-copy the right exercise into place.
+The track-level `track_scripts/setup-workshop` runs **once** when the track
+starts (before any challenge). It stages the shared workspace and starts the
+Temporal dev server — it does NOT install any tooling, since JDK/Gradle/the
+Temporal CLI are already baked into the Docker image. Per-challenge
+`setup-workshop` scripts are lightweight — they just copy the right exercise
+into place.
 
 **Check script strategy:** Source grep + compile only, no end-to-end run.
 Checks are fast (~10s) and don't flake on timing. Exit 0 = pass, exit non-zero = fail.
@@ -171,7 +188,7 @@ git commit -m "Fix bug in exercise 3 practice code"
 git push
 # → GitHub Action triggers, rebuilds Docker image (~5-10 min first build, ~2 min cached)
 # → New image tagged :latest and :sha-XXXXXX on GHCR
-# → Next Instruqt VM start pulls new image automatically
+# → Next Instruqt container start pulls new image automatically
 ```
 
 You do NOT need to push to Instruqt for exercise source changes.
@@ -222,14 +239,14 @@ git push
 1. **Create the exercise source** in `exercises/N_topic/practice/` and `solution/`
 2. **Create the track directory:**
    ```bash
-   mkdir track/05-my-topic
+   mkdir track/06-my-topic
    ```
 3. **Create the four script files** (copy from an existing challenge and adapt):
    ```bash
-   cp track/04-cost-optimization/setup-workshop-host track/05-my-topic/
-   cp track/04-cost-optimization/check-workshop-host track/05-my-topic/
-   cp track/04-cost-optimization/solve-workshop-host track/05-my-topic/
-   cp track/04-cost-optimization/cleanup-workshop-host track/05-my-topic/
+   cp track/05-saga/setup-workshop track/06-my-topic/
+   cp track/05-saga/check-workshop track/06-my-topic/
+   cp track/05-saga/solve-workshop track/06-my-topic/
+   cp track/05-saga/cleanup-workshop track/06-my-topic/
    ```
 4. **Create `assignment.md`** — copy from an existing challenge, update slug,
    clear the id field, write new content
@@ -278,45 +295,79 @@ instruqt track open
 instruqt config get team
 ```
 
+**Auth note:** `instruqt track push`/`pull` need an authenticated CLI session
+(`instruqt auth login`), and `docker push` to GHCR needs `docker login ghcr.io`
+with a classic GitHub PAT (`write:packages` scope). Both are interactive/tied
+to your local session — they generally need to be run from your own terminal,
+not scripted or delegated.
+
 ---
 
 ## Docker Image Reference
 
 ```bash
 # Pull and inspect current image
-docker pull ghcr.io/mmerrell/temporal-java-sandbox:latest
-docker run -it --rm ghcr.io/mmerrell/temporal-java-sandbox:latest bash
+docker pull ghcr.io/mmerrell/temporal-kotlin-sandbox:latest
+docker run -it --rm ghcr.io/mmerrell/temporal-kotlin-sandbox:latest bash
 
 # Inside: verify contents
-java -version          # Should be 17
-mvn -version           # Should be 3.9.x
-temporal --version     # Should be 1.3.x
-ls /opt/exercises/     # Should show all 4 exercise directories
+java -version           # Should be 17
+gradle -version         # Should be 9.6.x
+temporal --version      # Should be 1.3.x
+ls /opt/exercises/      # Should show all 5 exercise directories
 
 # Trigger a manual image rebuild (if auto-trigger didn't fire)
-# Go to github.com/mmerrell/temporal-java-hands-on/actions
+# Go to github.com/mmerrell/temporal-kotlin-hands-on/actions
 # Click "Build and Push Sandbox Image" → Run workflow
 ```
+
+**Build for the right architecture.** Instruqt's runners are `linux/amd64`.
+If you build locally on Apple Silicon without pinning a platform, `docker
+build` defaults to `arm64` and the image won't be pullable by Instruqt (it'll
+fail with "Could not find the image" on push, even though the image clearly
+exists on GHCR). Always build with `--platform linux/amd64` for anything
+bound for Instruqt:
+```bash
+docker build --platform linux/amd64 -f docker/Dockerfile \
+  -t ghcr.io/mmerrell/temporal-kotlin-sandbox:latest .
+```
+The GitHub Actions workflow already does this correctly (`platforms:
+linux/amd64` in `build-image.yml`) — this only matters for manual local builds.
+
+**Package visibility.** A freshly-pushed GHCR package defaults to **private**.
+Instruqt has no registry credentials configured, so it can only pull public
+images — same failure mode ("Could not find the image") if visibility isn't
+flipped. Fix it at `github.com/users/mmerrell/packages/container/package/temporal-kotlin-sandbox`
+→ Package settings → Danger Zone → Change visibility → Public.
 
 ---
 
 ## Known Limitations
 
-**VS Code sidebar visibility:** The activity bar (left icon strip) and secondary
-sidebar (right panel) cannot be hidden server-side. VS Code stores layout state
-in the browser's IndexedDB, not on the server. Learners can close them manually
-(View menu → Appearance → Hide Activity Bar / Hide Secondary Side Bar).
+**Container startup time:** The Docker image bakes in JDK, Gradle, the
+Temporal CLI, and a pre-warmed dependency cache,
+so `track_scripts/setup-workshop` only needs to stage files and start the
+Temporal dev server — it doesn't install anything at track-start time.
 
-**VS Code pre-opened files:** Similarly, which files are open on first load cannot
-be reliably set server-side. The `settings.json` approach works for editor
-preferences but not for open editor state. Learners should navigate to
-`src/main/java/fulfillment/` in the VS Code explorer.
+**Gradle cache warmup:** The Docker build warms the Gradle cache by running
+`gradle compileKotlin` on each `solution/` project. It must be a real compile —
+`gradle dependencies` resolves the dependency *graph* without downloading any
+artifact jars, so it looks like a warm cache and isn't. (That was the bug until
+exercise 6 went in: an offline compile of exercise 5 reported 34 missing jars.)
 
-**Track startup time:** The track-level setup script installs Java, Maven,
-Temporal CLI, and code-server from scratch on every track start. This takes
-5-10 minutes. This is a known Instruqt tradeoff — custom VM images can reduce
-it, but require Instruqt Enterprise support to create.
+Only `solution/` projects are warmed. Every exercise declares identical
+dependencies and Gradle's artifact cache is global, so warming one warms all of
+them — and because solutions are reference implementations, a compile failure
+during the image build is a real signal rather than an expected practice stub.
+Verify a change to this with an offline compile:
 
-**Maven cache warmup:** The setup script warms the Maven cache by running
-`dependency:resolve` on all 8 pom files. This means `mvn compile` in exercises
-is fast, but it adds ~2 minutes to setup time.
+```bash
+docker run --rm --platform linux/amd64 --user 1001 -e HOME=/home/user \
+  --network=none IMAGE bash -lc \
+  'gradle -p /opt/exercises/5_saga/solution compileKotlin --offline'
+```
+
+**Code Editor limitations:** Instruqt's native Code Editor tab (Monaco-based)
+gives syntax highlighting but no language server — no autocomplete, no inline
+error squiggles. Learners get compile feedback from the terminal
+(`gradle compileKotlin`) or the Check button, not the editor itself.

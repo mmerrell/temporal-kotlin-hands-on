@@ -1,6 +1,6 @@
 ---
 slug: saga
-id: oozxewo2hysx
+id: 1tz0fzknuxwx
 type: challenge
 title: 'Exercise 5: The Saga Pattern'
 teaser: Implement compensating transactions so multi-step workflows clean up after
@@ -17,7 +17,7 @@ notes:
     forward step has a corresponding undo step. If the pipeline breaks, the
     workflow runs the compensations in reverse order, restoring consistent state.
 
-    In Temporal this is plain Java: wrap the forward steps in `try/catch`.
+    In Temporal this is plain Kotlin: wrap the forward steps in `try/catch`.
     Declare your state variables (`reservationId`, `paymentConfirmation`) before
     the `try` block so the `catch` can see them. In the `catch`, call
     compensating activities only for the steps that actually completed — guard
@@ -28,23 +28,22 @@ notes:
 
     Hit **Start** when you're ready.
 tabs:
-- id: tmprzixga4ng
-  title: VS Code
-  type: service
+- id: 43vbnklzlaez
+  title: Code Editor
+  type: code
   hostname: workshop
-  path: ?folder=/workspace/exercise&openFile=/workspace/exercise/src/main/java/fulfillment/FulfillmentWorkflowImpl.java
-  port: 8443
-- id: 95qdga1qhrae
+  path: /workspace/exercise
+- id: dy5xwgnnkwsz
   title: Terminal 1 - Worker
   type: terminal
   hostname: workshop
   workdir: /workspace/exercise
-- id: xfu3ljncq7ku
+- id: oqly2nzk6lqv
   title: Terminal 2 - Starter
   type: terminal
   hostname: workshop
   workdir: /workspace/exercise
-- id: qslyvye3rsmg
+- id: vgaxupqdtgmt
   title: Temporal Web UI
   type: service
   hostname: workshop
@@ -57,16 +56,16 @@ enhanced_loading: null
 
 ## Exercise 5: The Saga Pattern
 
-All your work is in **`FulfillmentWorkflowImpl.java`** (active tab).
+All your work is in **`FulfillmentWorkflowImpl.kt`** (active tab).
 
-Files are in `/workspace/exercise/src/main/java/fulfillment/`.
-Look for the two `// TODO` blocks.
+Files are in `/workspace/exercise/src/main/kotlin/fulfillment/`.
+Look for the two `TODO(...)` blocks.
 
 ***
 
 ### Part A – Understand the domain
 
-Open `FulfillmentActivities.java` (second tab). Notice it has five methods:
+Open `FulfillmentActivities.kt` (second tab). Notice it has five methods:
 
 **Forward steps** (run in order):
 1. `reserveInventory` — holds stock for the order
@@ -88,12 +87,12 @@ The state variables `reservationId` and `paymentConfirmation` are already
 declared as `null` before the `try`. Inside the `try` block, call all three
 forward steps and return on success:
 
-```java
-reservationId = activities.reserveInventory(order);
-paymentConfirmation = activities.processPayment(order);
-String trackingNumber = activities.dispatchToFulfillment(order, reservationId);
-return new OrderResult(order.getOrderId(), "FULFILLED",
-    reservationId, paymentConfirmation, trackingNumber);
+```kotlin
+reservationId = activities.reserveInventory(order)
+paymentConfirmation = activities.processPayment(order)
+val trackingNumber = activities.dispatchToFulfillment(order, reservationId)
+return OrderResult(order.orderId, "FULFILLED",
+    reservationId, paymentConfirmation, trackingNumber)
 ```
 
 Remove the `NOT_IMPLEMENTED` placeholder return.
@@ -102,19 +101,19 @@ Remove the `NOT_IMPLEMENTED` placeholder return.
 
 ### Part C – Compensate in reverse order
 
-In the `catch (Exception e)` block, undo only the steps that completed.
+In the `catch (e: Exception)` block, undo only the steps that completed.
 The null guards are the key — if `reserveInventory` threw before returning,
 `reservationId` is still `null`, so there's nothing to release:
 
-```java
+```kotlin
 if (paymentConfirmation != null) {
-    activities.refundPayment(paymentConfirmation);
+    activities.refundPayment(paymentConfirmation)
 }
 if (reservationId != null) {
-    activities.releaseInventory(reservationId);
+    activities.releaseInventory(reservationId)
 }
-return new OrderResult(order.getOrderId(), "FAILED",
-    reservationId, paymentConfirmation, null);
+return OrderResult(order.orderId, "FAILED",
+    reservationId, paymentConfirmation, null)
 ```
 
 ***
@@ -124,13 +123,13 @@ return new OrderResult(order.getOrderId(), "FAILED",
 1. Click the [button label="Terminal 1 - Worker" background="#444CE7"](tab-1) tab and start the Worker:
 
    ```bash,run
-   mvn compile exec:java -Dexec.mainClass="fulfillment.FulfillmentWorker"
+   gradle runWorker
    ```
 
 2. Click the [button label="Terminal 2 - Starter" background="#444CE7"](tab-2) tab and run the Starter:
 
    ```bash,run
-   mvn exec:java -Dexec.mainClass="fulfillment.Starter"
+   gradle runStarter
    ```
 
 `dispatchToFulfillment` fails 30% of the time. Run the Starter a few times until

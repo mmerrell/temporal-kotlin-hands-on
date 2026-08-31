@@ -1,6 +1,6 @@
 #!/bin/bash
 EXERCISE_DIR="/workspace/exercise"
-WORKFLOW_IMPL="$EXERCISE_DIR/src/main/java/fulfillment/FulfillmentWorkflowImpl.java"
+WORKFLOW_IMPL="$EXERCISE_DIR/src/main/kotlin/fulfillment/FulfillmentWorkflowImpl.kt"
 
 fail() { echo "FAIL: $1"; exit 1; }
 pass() { echo "PASS: $1"; }
@@ -15,8 +15,8 @@ if ! grep -q "newLocalActivityStub" "$WORKFLOW_IMPL"; then
 fi
 pass "Workflow.newLocalActivityStub() used"
 
-if grep -q "localActivities = null" "$WORKFLOW_IMPL"; then
-  fail "The localActivities field is still null. Replace it with a real Workflow.newLocalActivityStub() call."
+if grep -q "localActivities.*= null" "$WORKFLOW_IMPL"; then
+  fail "The localActivities field is still unimplemented. Replace it with a real Workflow.newLocalActivityStub() call."
 fi
 pass "localActivities stub initialized"
 
@@ -42,9 +42,9 @@ if [[ "$validate_line" -ge "$child_stub_line" ]]; then
 fi
 pass "Local activity calls ordered before child workflow"
 
-echo "Running mvn compile..."
+echo "Running gradle compileKotlin..."
 cd "$EXERCISE_DIR"
-if ! mvn compile -q 2>&1; then
+if ! gradle compileKotlin -q 2>&1; then
   fail "Project does not compile. Fix compilation errors above and try again."
 fi
 pass "Project compiles successfully"

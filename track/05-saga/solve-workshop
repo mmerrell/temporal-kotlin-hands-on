@@ -1,4 +1,4 @@
 #!/bin/bash
 cp -r /workspace/solution/src/. /workspace/exercise/src/
-cd /workspace/exercise && mvn compile -q
-echo "Solution applied. Review FulfillmentWorkflowImpl.java — note the try/catch saga structure and null-guarded compensating transactions."
+cd /workspace/exercise && gradle compileKotlin -q
+echo "Solution applied. Review FulfillmentWorkflowImpl.kt — note the try/catch saga structure and null-guarded compensating transactions."

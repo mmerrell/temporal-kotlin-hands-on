@@ -1,7 +1,7 @@
 #!/bin/bash
 EXERCISE_DIR="/workspace/exercise"
-INVENTORY_IMPL="$EXERCISE_DIR/src/main/java/fulfillment/InventoryReservationWorkflowImpl.java"
-FULFILLMENT_IMPL="$EXERCISE_DIR/src/main/java/fulfillment/FulfillmentWorkflowImpl.java"
+INVENTORY_IMPL="$EXERCISE_DIR/src/main/kotlin/fulfillment/InventoryReservationWorkflowImpl.kt"
+FULFILLMENT_IMPL="$EXERCISE_DIR/src/main/kotlin/fulfillment/FulfillmentWorkflowImpl.kt"
 
 fail() { echo "FAIL: $1"; exit 1; }
 pass() { echo "PASS: $1"; }
@@ -16,8 +16,8 @@ if ! grep -q "setStartToCloseTimeout\|StartToCloseTimeout" "$INVENTORY_IMPL"; th
 fi
 pass "StartToCloseTimeout configured"
 
-if grep -q "return null" "$INVENTORY_IMPL"; then
-  fail "InventoryReservationWorkflowImpl.reserve() still returns null. Iterate over WAREHOUSES and return the first non-null result."
+if grep -q "TODO(" "$INVENTORY_IMPL"; then
+  fail "InventoryReservationWorkflowImpl.reserve() is still unimplemented. Iterate over WAREHOUSES and return the first non-null result."
 fi
 pass "reserve() has a real implementation"
 
@@ -32,18 +32,18 @@ fi
 pass "Child workflow stub created in parent"
 
 if ! grep -q "ChildWorkflowOptions" "$FULFILLMENT_IMPL"; then
-  fail "FulfillmentWorkflowImpl is missing ChildWorkflowOptions. Set workflowId = \"inventory-\" + order.getOrderId()."
+  fail "FulfillmentWorkflowImpl is missing ChildWorkflowOptions. Set workflowId = \"inventory-\${order.orderId}\"."
 fi
 pass "ChildWorkflowOptions configured"
 
-if grep -q "String reservationId = null" "$FULFILLMENT_IMPL"; then
-  fail "FulfillmentWorkflowImpl still has 'String reservationId = null'. Call the child workflow's reserve() method."
+if grep -q "TODO(" "$FULFILLMENT_IMPL"; then
+  fail "FulfillmentWorkflowImpl still has an unimplemented reservationId. Call the child workflow's reserve() method."
 fi
 pass "reservationId wired to child workflow result"
 
-echo "Running mvn compile..."
+echo "Running gradle compileKotlin..."
 cd "$EXERCISE_DIR"
-if ! mvn compile -q 2>&1; then
+if ! gradle compileKotlin -q 2>&1; then
   fail "Project does not compile. Fix compilation errors above and try again."
 fi
 pass "Project compiles successfully"

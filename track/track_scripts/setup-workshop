@@ -2,9 +2,9 @@
 set -euo pipefail
 
 # ─── Track-level setup ────────────────────────────────────────────────────────
-# The sandbox image (ghcr.io/mmerrell/temporal-java-sandbox:latest) already
-# contains JDK 17, Maven 3.9, the Temporal CLI, all five exercise directories
-# at /opt/exercises/, and a pre-warmed Maven dependency cache.
+# The sandbox image (ghcr.io/mmerrell/temporal-kotlin-sandbox:latest) already
+# contains JDK 17, Gradle 9.6, the Temporal CLI, all five exercise directories
+# at /opt/exercises/, and a pre-warmed Gradle dependency cache.
 #
 # This script only needs to:
 #   1. Stage the shared workspace skeleton from /opt/exercises into /workspace
@@ -15,11 +15,15 @@ set -euo pipefail
 mkdir -p /workspace
 
 # 2. Start Temporal dev server
+# --metrics-port exposes the server's own Prometheus endpoint on :9090. Exercise 6
+# uses it to count RecordActivityTaskHeartbeat RPCs, which never appear in Workflow
+# Event History and so cannot be counted with `temporal workflow show`.
 nohup temporal server start-dev \
     --ui-port 8080 \
     --ip 0.0.0.0 \
     --db-filename /workspace/temporal.db \
     --log-level warn \
+    --metrics-port 9090 \
     > /workspace/temporal.log 2>&1 &
 echo $! > /workspace/temporal-server.pid
 
@@ -38,6 +42,6 @@ done
 export TEMPORAL_ADDRESS="127.0.0.1:7233"
 echo 'export TEMPORAL_ADDRESS="127.0.0.1:7233"' >> /root/.bashrc
 echo 'alias tl="temporal workflow list"' >> /root/.bashrc
-echo 'alias mvnw="mvn compile exec:java"' >> /root/.bashrc
+echo 'alias gw="gradle"' >> /root/.bashrc
 
 echo "Track setup complete."

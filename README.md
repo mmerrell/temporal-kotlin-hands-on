@@ -1,8 +1,8 @@
-# Temporal Java Hands-On Lab
+# Temporal Kotlin Hands-On Lab
 
-Instruqt track: four progressive coding challenges using the Temporal Java SDK.
+Instruqt track: six progressive coding challenges using the Temporal Java SDK from Kotlin.
 Built on a durable order-fulfillment scenario (inventory reservation, payment, dispatch)
-that mirrors real Coupang production patterns.
+that mirrors real production patterns.
 
 ## Track Challenges
 
@@ -12,20 +12,23 @@ that mirrors real Coupang production patterns.
 | 2 | `child-workflows` | Decompose into child workflow with separate history | `newChildWorkflowStub`, `ChildWorkflowOptions` |
 | 3 | `parallel-activities` | Fan out warehouse checks concurrently | `Async.function()`, `Promise.allOf()` |
 | 4 | `cost-optimization` | Move fast steps to Local Activities | `newLocalActivityStub`, `LocalActivityOptions` |
+| 5 | `saga` | Compensating transactions on failure | try/catch, null-guarded compensation |
 
 ## Repo Layout
 
 ```
-temporal-java-hands-on/
+temporal-kotlin-hands-on/
 ├── docker/
-│   └── Dockerfile                  # eclipse-temurin:17-jdk + Maven + Temporal CLI
+│   └── Dockerfile                  # eclipse-temurin:17-jdk + Gradle + Temporal CLI
 ├── exercises/                      # Exercise source baked into the Docker image
 │   ├── 1_converting/
-│   │   ├── practice/               # Learner starting point (// TODO stubs)
+│   │   ├── practice/               # Learner starting point (TODO(...) stubs)
 │   │   └── solution/               # Reference implementation
 │   ├── 2_child_workflows/
 │   ├── 3_parallel_activities/
-│   └── 4_cost_optimization/
+│   ├── 4_cost_optimization/
+│   ├── 5_saga/
+│   └── 6_cost_deep_dive/
 ├── scripts/
 │   └── bootstrap-exercises.sh      # Populate exercises/ from any workshop repo
 ├── track/                          # Instruqt track definition
@@ -34,12 +37,14 @@ temporal-java-hands-on/
 │   │   ├── config.yml              # Container + tab layout
 │   │   ├── assignment.md           # Learner instructions (rendered in sidebar)
 │   │   ├── setup-shell             # Copies practice/ to /home/user/exercise
-│   │   ├── check-shell             # Source grep + mvn compile
+│   │   ├── check-shell             # Source grep + gradle compileKotlin
 │   │   ├── solve-shell             # Copies solution/ over practice/
 │   │   └── cleanup-shell
 │   ├── 02-child-workflows/
 │   ├── 03-parallel-activities/
-│   └── 04-cost-optimization/
+│   ├── 04-cost-optimization/
+│   ├── 05-saga/
+│   └── 06-cost-deep-dive/
 └── .github/workflows/build-image.yml  # Rebuilds sandbox image on push to main
 ```
 
@@ -49,15 +54,15 @@ Each Instruqt challenge runs **two containers**:
 
 | Container | Image | Role |
 |-----------|-------|------|
-| `sandbox` | `ghcr.io/temporal-io/temporal-java-sandbox:latest` | Learner's terminal (JDK 17, Maven, Temporal CLI, exercise code) |
+| `sandbox` | `ghcr.io/mmerrell/temporal-kotlin-sandbox:latest` | Learner's terminal (JDK 17, Gradle, Temporal CLI, exercise code) |
 | `temporal-server` | `temporalio/temporal:latest` | Local dev server — Web UI on port 8233 |
 
 The sandbox connects to the server via `TEMPORAL_ADDRESS=temporal-server:7233`.
 Learners never manage the Temporal server process — it's always running as a sidecar.
 
 Learners get **three tabs** per challenge:
-- **Terminal 1** — for running the Worker (`mvn compile exec:java -Dexec.mainClass="fulfillment.FulfillmentWorker"`)
-- **Terminal 2** — for running the Starter
+- **Terminal 1** — for running the Worker (`gradle runWorker`)
+- **Terminal 2** — for running the Starter (`gradle runStarter`)
 - **Temporal Web UI** — service tab pointing at `temporal-server:8233`
 
 ## Setting Up the Exercises Directory
@@ -98,19 +103,19 @@ git subtree pull --prefix=exercises workshop main --squash
 
 ```bash
 # From the repo root
-docker build -f docker/Dockerfile -t temporal-java-sandbox:local .
+docker build -f docker/Dockerfile -t temporal-kotlin-sandbox:local .
 
 # Verify the contents
-docker run -it --rm temporal-java-sandbox:local bash
-# Inside: java -version, mvn -version, temporal --version, ls /opt/exercises/
+docker run -it --rm temporal-kotlin-sandbox:local bash
+# Inside: java -version, gradle -version, temporal --version, ls /opt/exercises/
 ```
 
 ## CI/CD
 
 On every push to `main` that touches `docker/Dockerfile` or `exercises/**`,
 GitHub Actions rebuilds and pushes:
-- `ghcr.io/temporal-io/temporal-java-sandbox:latest`
-- `ghcr.io/temporal-io/temporal-java-sandbox:sha-<short-sha>` (pinned reference)
+- `ghcr.io/mmerrell/temporal-kotlin-sandbox:latest`
+- `ghcr.io/mmerrell/temporal-kotlin-sandbox:sha-<short-sha>` (pinned reference)
 
 **First-time setup:**
 1. Ensure the repo's GitHub Actions have `packages: write` permission
@@ -124,18 +129,18 @@ The action rebuilds the image with the new content baked in.
 
 ```bash
 cd track/
-instruqt track push temporal/temporal-java-hands-on
+instruqt track push temporal/temporal-kotlin-hands-on
 ```
 
 **First push:** The `id: ""` fields in `track.yml` and each `assignment.md` will be
 populated by Instruqt. Pull the track after first push to capture the generated IDs:
 ```bash
-instruqt track pull temporal/temporal-java-hands-on
+instruqt track pull temporal/temporal-kotlin-hands-on
 ```
 
 ## Check Script Strategy
 
-All check scripts use **source grep + `mvn compile`** — no end-to-end workflow execution.
+All check scripts use **source grep + `gradle compileKotlin`** — no end-to-end workflow execution.
 
 This means checks are fast (~10s for compile) and don't flake on timing. The tradeoff
 is that a learner could theoretically pass checks with syntactically correct but
@@ -150,5 +155,6 @@ unless the Dockerfile or exercise source changed.
 ## Temporal CLI Version Notes
 
 The Dockerfile pins Temporal CLI to `1.3.0`. The exercises use Temporal Java SDK
-`1.31.0`. If you upgrade the SDK, check the CLI release notes for any dev server
-compatibility requirements before bumping `TEMPORAL_CLI_VERSION` in the Dockerfile.
+`1.31.0` (called from Kotlin — there is no separate Temporal Kotlin SDK). If you
+upgrade the SDK, check the CLI release notes for any dev server compatibility
+requirements before bumping `TEMPORAL_CLI_VERSION` in the Dockerfile.

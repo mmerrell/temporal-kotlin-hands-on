@@ -1,18 +1,18 @@
 #!/bin/bash
 EXERCISE_DIR="/workspace/exercise"
-ACTIVITIES_IMPL="$EXERCISE_DIR/src/main/java/fulfillment/FulfillmentActivitiesImpl.java"
-WORKFLOW_IMPL="$EXERCISE_DIR/src/main/java/fulfillment/FulfillmentWorkflowImpl.java"
+ACTIVITIES_IMPL="$EXERCISE_DIR/src/main/kotlin/fulfillment/FulfillmentActivitiesImpl.kt"
+WORKFLOW_IMPL="$EXERCISE_DIR/src/main/kotlin/fulfillment/FulfillmentWorkflowImpl.kt"
 
 fail() { echo "FAIL: $1"; exit 1; }
 pass() { echo "PASS: $1"; }
 
-if grep -q "UnsupportedOperationException" "$ACTIVITIES_IMPL"; then
-  fail "FulfillmentActivitiesImpl still has unimplemented stubs (UnsupportedOperationException found). Implement all three activity methods."
+if grep -q "TODO(" "$ACTIVITIES_IMPL"; then
+  fail "FulfillmentActivitiesImpl still has unimplemented stubs (TODO(...) found). Implement all three activity methods."
 fi
 pass "Activity stubs replaced"
 
 if ! grep -q "ApplicationFailure" "$ACTIVITIES_IMPL"; then
-  fail "FulfillmentActivitiesImpl should use ApplicationFailure.newFailure() for error cases, not raw Exception throws."
+  fail "FulfillmentActivitiesImpl should use ApplicationFailure.newFailure() for error cases, not raw exception throws."
 fi
 pass "ApplicationFailure used in activities"
 
@@ -26,14 +26,14 @@ if ! grep -q "setStartToCloseTimeout\|StartToCloseTimeout" "$WORKFLOW_IMPL"; the
 fi
 pass "StartToCloseTimeout configured"
 
-if grep -q "return null" "$WORKFLOW_IMPL"; then
-  fail "FulfillmentWorkflowImpl.processOrder() still returns null. Call the activities and return an OrderResult."
+if grep -q "TODO(" "$WORKFLOW_IMPL"; then
+  fail "FulfillmentWorkflowImpl.processOrder() is still unimplemented. Call the activities and return an OrderResult."
 fi
 pass "processOrder returns a result"
 
-echo "Running mvn compile..."
+echo "Running gradle compileKotlin..."
 cd "$EXERCISE_DIR"
-if ! mvn compile -q 2>&1; then
+if ! gradle compileKotlin -q 2>&1; then
   fail "Project does not compile. Fix any compilation errors above and try again."
 fi
 pass "Project compiles successfully"

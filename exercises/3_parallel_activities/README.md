@@ -6,7 +6,7 @@ During this exercise, you will:
 - Collect results with `Promise.allOf()` to wait for all completions
 - Return the first successful warehouse reservation
 
-This directly mirrors Coupang's scale challenge: checking all warehouses simultaneously
+This directly mirrors a real scale challenge: checking all warehouses simultaneously
 instead of sequentially. The same pattern applies to processing thousands of containers
 in parallel.
 
@@ -20,22 +20,21 @@ temporal server start-dev
 
 ## Part A: Fan out with Async.function()
 
-Open `InventoryReservationWorkflowImpl.java`. For each `warehouseId` in `WAREHOUSES`:
+Open `InventoryReservationWorkflowImpl.kt`. For each `warehouseId` in `WAREHOUSES`:
 
-```java
-Promise<String> p = Async.function(
+```kotlin
+val p = Async.function(
     warehouseActivities::checkWarehouseInventory,
     warehouseId, sku, quantity
-);
-promises.add(p);
+)
 ```
 
-`Async.function()` is Temporal's opt-in to concurrency — Java SDK is synchronous by default.
+`Async.function()` is Temporal's opt-in to concurrency — the SDK is synchronous by default.
 
 ## Part B: Wait with Promise.allOf()
 
-```java
-Promise.allOf(promises).get();
+```kotlin
+Promise.allOf(promises).get()
 ```
 
 This blocks the workflow durably until every promise resolves.
@@ -49,13 +48,13 @@ If all null, throw a non-retryable `ApplicationFailure` with type `"OutOfStock"`
 
 ```bash
 # Terminal 1
-mvn compile exec:java -Dexec.mainClass="fulfillment.FulfillmentWorker"
+gradle runWorker
 
 # Terminal 2
-mvn exec:java -Dexec.mainClass="fulfillment.Starter"
+gradle runStarter
 ```
 
-In the Web UI, open `inventory-ORD-1003`. Notice the three `checkWarehouseInventory`
+In the Web UI, open `inventory-ORD-1003`. Notice the six `checkWarehouseInventory`
 activity tasks scheduled nearly simultaneously — compare with Exercise 2 where they
 ran one at a time.
 

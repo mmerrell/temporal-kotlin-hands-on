@@ -1,13 +1,13 @@
 ---
 slug: converting
-id: byvjpgcuvsa4
+id: 8m9lheaemgnm
 type: challenge
 title: 'Exercise 1: Converting a Workflow'
 teaser: Replace a fragile retry loop with Temporal Activities and a durable Workflow.
 notes:
 - type: text
   contents: |-
-    The starting point for this exercise is `FulfillmentPipeline.java` — a deliberately fragile
+    The starting point for this exercise is `FulfillmentPipeline.kt` — a deliberately fragile
     implementation using `Thread.sleep()` retries and local variable state.
 
     If the process dies mid-execution, the order is lost. If a step fails after three attempts,
@@ -18,23 +18,22 @@ notes:
 
     Hit **Start** when you're ready.
 tabs:
-- id: beatbahvb8mh
-  title: VS Code
-  type: service
+- id: ipj9uh36unsk
+  title: Code Editor
+  type: code
   hostname: workshop
-  path: ?folder=/workspace/exercise&openFile=/workspace/exercise/src/main/java/fulfillment/FulfillmentPipeline.java&openFile=/workspace/exercise/src/main/java/fulfillment/FulfillmentActivitiesImpl.java
-  port: 8443
-- id: aucxy2upmgp6
+  path: /workspace/exercise
+- id: gzyxqvndjmd5
   title: Terminal 1 - Worker
   type: terminal
   hostname: workshop
   workdir: /workspace/exercise
-- id: owpxr5lnaa1c
+- id: cx2322ivai8l
   title: Terminal 2 - Starter
   type: terminal
   hostname: workshop
   workdir: /workspace/exercise
-- id: beuekqadj4dh
+- id: umq858v8stst
   title: Temporal Web UI
   type: service
   hostname: workshop
@@ -47,31 +46,32 @@ enhanced_loading: null
 
 ## Exercise 1: Converting a Workflow
 
-Open **`FulfillmentActivitiesImpl.java`** and **`FulfillmentWorkflowImpl.java`** in VS Code.
-Look for `// TODO` comments — they mark everything you need to implement.
+Open **`FulfillmentActivitiesImpl.kt`** and **`FulfillmentWorkflowImpl.kt`** in the Code Editor tab.
+Look for `TODO(...)` markers — they mark everything you need to implement.
 
-> **Note:** Wait for the "Java" indicator in the VS Code status bar to finish indexing before
-> expecting autocomplete and the Problems panel to work. This takes about 30-60 seconds on first load.
+> **Note:** The Code Editor gives you syntax highlighting but not autocomplete or inline
+> error checking — use the terminal to run `gradle compileKotlin` any time you want to
+> check your work before clicking Check.
 
-Files are in `/workspace/exercise/src/main/java/fulfillment/`.
+Files are in `/workspace/exercise/src/main/kotlin/fulfillment/`.
 
 ***
 
 ### Part A – Implement the three Activities
 
-In `FulfillmentActivitiesImpl.java`, fill in each of the three methods.
-Look at `FulfillmentPipeline.java` (already open in a tab) to understand what each method should do.
+In `FulfillmentActivitiesImpl.kt`, fill in each of the three methods.
+Look at `FulfillmentPipeline.kt` (already open in a tab) to understand what each method should do.
 
 For each method:
-- Replace the `throw new UnsupportedOperationException(...)` stub with the actual logic
-- Replace raw `throw new Exception(...)` calls with `ApplicationFailure.newFailure(message, type)`
+- Replace the `TODO(...)` stub with the actual logic
+- Replace raw `throw Exception(...)` calls with `ApplicationFailure.newFailure(message, type)`
 - Keep the `Math.random()` failure simulation — Temporal will retry it automatically
 
 ***
 
 ### Part B – Implement the Workflow
 
-In `FulfillmentWorkflowImpl.java`:
+In `FulfillmentWorkflowImpl.kt`:
 
 1. Create `ActivityOptions` with a `StartToCloseTimeout` of **30 seconds**
 2. Create a `FulfillmentActivities` stub via `Workflow.newActivityStub(...)`
@@ -87,13 +87,13 @@ Once your code compiles, start both processes:
 1. Click the [button label="Terminal 1 - Worker" background="#444CE7"](tab-1) tab and start the Worker:
 
    ```bash,run
-   mvn compile exec:java -Dexec.mainClass="fulfillment.FulfillmentWorker"
+   gradle runWorker
    ```
 
 2. Click the [button label="Terminal 2 - Starter" background="#444CE7"](tab-2) tab and run the Starter:
 
    ```bash,run
-   mvn exec:java -Dexec.mainClass="fulfillment.Starter"
+   gradle runStarter
    ```
 
 Open the [button label="Temporal Web UI" background="#444CE7"](tab-3) tab and find workflow `fulfillment-ORD-1001`.

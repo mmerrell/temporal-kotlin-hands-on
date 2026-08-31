@@ -12,13 +12,16 @@ each session.
 
 A set of Instruqt hands-on coding labs for teaching the Temporal SDK. Each lab
 is a self-contained coding exercise where learners implement missing pieces of
-a Temporal workflow in a browser-based container with VS Code, terminals, and a
-live Temporal server.
+a Temporal workflow in a browser-based container with Instruqt's native Code
+Editor, terminals, and a live Temporal server.
 
 Current tracks:
 - `temporal-java-hands-on` (live) — 5 exercises, Java SDK, order fulfillment scenario
+- `temporal-kotlin-hands-on` (live) — same 5 exercises, ported to Kotlin (still on
+  the Temporal Java SDK — there's no separate Temporal Kotlin SDK), Gradle instead
+  of Maven
 - Python AI agents track (planned)
-- Additional Java modules planned: Continue-As-New, encryption, claim check pattern
+- Additional modules planned: Continue-As-New, encryption, claim check pattern
 
 Owner: Marcus Merrell, Staff Developer Advocate, Temporal Technologies
 GitHub org: `mmerrell` (personal), eventually `temporal` (team)
@@ -29,14 +32,14 @@ Instruqt team: `temporal`
 ## Repo Structure
 
 ```
-temporal-java-hands-on/           github.com/mmerrell/temporal-java-hands-on
+temporal-kotlin-hands-on/         github.com/mmerrell/temporal-kotlin-hands-on
 ├── .github/workflows/
 │   └── build-image.yml           Rebuilds Docker image when exercises/** or Dockerfile change
 ├── docker/
-│   └── Dockerfile                JDK 17 + Maven 3.9 + Temporal CLI + baked exercises (all 5)
+│   └── Dockerfile                JDK 17 + Gradle 9.6 + Temporal CLI + baked exercises (all 5)
 ├── exercises/
 │   ├── 1_converting/
-│   │   ├── practice/             Learner starting point (// TODO stubs)
+│   │   ├── practice/             Learner starting point (TODO(...) stubs)
 │   │   └── solution/             Reference implementation
 │   ├── 2_child_workflows/
 │   ├── 3_parallel_activities/
@@ -53,7 +56,7 @@ temporal-java-hands-on/           github.com/mmerrell/temporal-java-hands-on
     │   ├── assignment.md         Frontmatter (slug, tabs, notes) + Markdown content
     │   ├── config.yml            Minimal (version: "3" only)
     │   ├── setup-workshop        Copies exercise into /workspace/exercise
-    │   ├── check-workshop        Source grep + mvn compile
+    │   ├── check-workshop        Source grep + gradle compileKotlin
     │   ├── solve-workshop        Applies solution
     │   └── cleanup-workshop      No-op
     ├── 02-child-workflows/
@@ -62,19 +65,29 @@ temporal-java-hands-on/           github.com/mmerrell/temporal-java-hands-on
     └── 05-saga/
 ```
 
+Note: the Java version of this repo (`temporal-java-hands-on`) has the identical
+structure with `pom.xml`/`src/main/java` instead of `build.gradle.kts`/`src/main/kotlin`,
+and `mvn` instead of `gradle` throughout. If you're asked to port a change between
+the two tracks, that's the mapping.
+
 ---
 
 ## Infrastructure
 
-**Container image:** `ghcr.io/mmerrell/temporal-java-sandbox:latest` (public)
+**Container image:** `ghcr.io/mmerrell/temporal-kotlin-sandbox:latest` (must be public — see Known Limitations)
 **Container memory:** 4096MB
 **Temporal server:** Started via `nohup temporal server start-dev --ui-port 8080 --ip 0.0.0.0` in track setup script
-**VS Code:** `code-server` running inside the container on port 8443, with `vscjava.vscode-java-pack` pre-installed in the image
-**Maven cache:** Pre-warmed for all 10 pom files (practice + solution × 5) during Docker image build
+**Editor:** Instruqt's native Code Editor tab (`type: code`) — reads/writes files directly in the
+container, no code-server or VS Code involved. Syntax highlighting only, no language server
+(no autocomplete, no inline compile errors).
+**Gradle cache:** Pre-warmed for all 10 project directories (practice + solution × 5) during Docker image build
 
-Each challenge has four tabs: VS Code (tab-0, default), Terminal 1 - Worker (tab-1), Terminal 2 - Starter (tab-2), Temporal Web UI (tab-3).
-Exercise files land at `/workspace/exercise/src/main/java/fulfillment/`.
-Container hostname is `workshop` (not `workshop-host` — that was the old VM name).
+Each challenge has four tabs: Code Editor (tab-0, default), Terminal 1 - Worker (tab-1), Terminal 2 - Starter (tab-2), Temporal Web UI (tab-3).
+Exercise files land at `/workspace/exercise/src/main/kotlin/fulfillment/`.
+Container hostname is `workshop`. There is only ever one container — don't invent a second
+hostname (like `workshop-host`) for scripts or tabs unless `config.yml` actually declares it;
+`instruqt track validate` rejects any script/tab referencing an unknown hostname, and won't
+tell you it's dead until you try to push.
 
 ---
 
@@ -100,9 +113,10 @@ Instruqt is strict about this format. Key rules Claude must follow:
 5. **`notes:`** is the pre-challenge splash screen (shown before learner clicks Start)
 6. **Assignment content** is plain Markdown after the closing `---`
 7. **`type: challenge`** for coding exercises (not `type: quiz`)
-8. **`hostname: workshop`** — use this, not `workshop-host` (old VM name)
+8. **`hostname: workshop`** — the only container this track defines; every tab and script must use it
 9. **`bash,run` code fences** execute the command in the active terminal tab on click: ` ```bash,run `
 10. **Tab-switch buttons** with Temporal blue: `[button label="Terminal 1 - Worker" background="#444CE7"](tab-1)`
+11. **The editor tab is `type: code`**, not `type: service` — no `port:` needed, just `path:` to the directory to open
 
 Example frontmatter structure:
 ```yaml
@@ -117,11 +131,10 @@ notes:
   contents: |-
     Markdown shown before Start button.
 tabs:
-- title: VS Code
-  type: service
+- title: Code Editor
+  type: code
   hostname: workshop
-  port: 8443
-  path: ?folder=/workspace/exercise
+  path: /workspace/exercise
 - title: Terminal 1 - Worker
   type: terminal
   hostname: workshop
@@ -146,7 +159,7 @@ All check scripts follow this pattern:
 ```bash
 #!/bin/bash
 EXERCISE_DIR="/workspace/exercise"
-TARGET_FILE="$EXERCISE_DIR/src/main/java/fulfillment/SomeFile.java"
+TARGET_FILE="$EXERCISE_DIR/src/main/kotlin/fulfillment/SomeFile.kt"
 
 fail() { echo "FAIL: $1"; exit 1; }
 pass() { echo "PASS: $1"; }
@@ -159,7 +172,7 @@ pass "What was verified"
 
 # Always end with compile check
 cd "$EXERCISE_DIR"
-if ! mvn compile -q 2>&1; then
+if ! gradle compileKotlin -q 2>&1; then
   fail "Project does not compile. Fix compilation errors above and try again."
 fi
 pass "Project compiles successfully"
@@ -167,6 +180,10 @@ pass "Project compiles successfully"
 
 Checks are source grep + compile only — no end-to-end workflow execution.
 Exit 0 = pass, non-zero = fail.
+
+The Kotlin practice stubs use `TODO("description")` (which throws `NotImplementedError`
+at runtime) as the unimplemented marker, not Java's `throw new UnsupportedOperationException(...)`
+or `return null`. Check scripts grep for `TODO(` to detect an unfinished stub.
 
 ---
 
@@ -185,12 +202,6 @@ instruqt config get team          # Should return "temporal"
 
 ## Known Limitations
 
-- **VS Code sidebar/file state** is stored in browser IndexedDB, not server-side.
-  `settings.json` and `.code-workspace` files affect editor preferences but NOT
-  which files are open or whether sidebars are visible on first load. Don't spend
-  time trying to solve this server-side — it can't be done without a custom
-  VS Code extension or Instruqt platform support.
-
 - **`instruqt track list`** doesn't work as expected with the current CLI version —
   use the Instruqt web UI to see available tracks.
 
@@ -198,11 +209,45 @@ instruqt config get team          # Should return "temporal"
   They are conflict markers — review, accept one version, delete the `.remote` files,
   then push with `--force`.
 
+- **Kotlin's `::class.java` idiom is expected, not a leftover from the Java port.**
+  Temporal's Java SDK APIs (`Workflow.newActivityStub`, `client.newWorkflowStub`, etc.)
+  take a `Class<T>` argument, so Kotlin code calls them with `SomeInterface::class.java`.
+  Don't "fix" this thinking it's Java residue.
+
+- **"Could not find the image" on `instruqt track push` has two unrelated causes** —
+  check both before assuming it's a naming/typo issue:
+  1. **Wrong architecture.** Instruqt's runners are `linux/amd64`. A plain `docker build`
+     on Apple Silicon defaults to `arm64` and pushes fine to GHCR, but Instruqt can't pull
+     it — same error message either way. Always build with `--platform linux/amd64` for
+     anything bound for Instruqt. Verify with `docker inspect <image> --format
+     '{{.Os}}/{{.Architecture}}'` before pushing, or `docker manifest inspect` on the
+     registry copy to confirm an `amd64` entry actually exists.
+  2. **Private package.** A GHCR package is private by default on first push. Instruqt has
+     no registry credentials configured, so it needs the package to be public. Fix at
+     `github.com/users/mmerrell/packages/container/package/temporal-kotlin-sandbox` →
+     Package settings → Danger Zone → Change visibility. Verify with `docker logout ghcr.io`
+     then `docker manifest inspect <image>` — if that succeeds while logged out, it's public.
+
+- **CLI auth doesn't transfer across shell/agent boundaries.** `instruqt track push` and
+  `docker login`/`docker push` are both tied to interactive credentials in the user's own
+  terminal/keychain session. If Claude runs these in a separate sandboxed shell, expect
+  `Unauthorized` even with correct config (`instruqt config get team` succeeding is not
+  proof of a valid push session). Have the user run auth-sensitive commands themselves and
+  report back the output, rather than assuming a shared session.
+
+- **Any script or tab hostname must match a container actually declared in `config.yml`.**
+  This track has exactly one container, `workshop`. A `*-workshop-host` script (or a tab
+  with `hostname: workshop-host`) referencing a nonexistent host will fail
+  `instruqt track validate` with "references unknown host" — and it'll sit in the repo
+  looking legitimate until someone actually tries to push. If you find scripts like this
+  during a review, they're dead leftovers from an old two-tier VM+container architecture,
+  not something to preserve.
+
 ---
 
 ## Adding a New Challenge
 
-1. Create `exercises/N_topic/practice/` and `solution/` with pom.xml and src/
+1. Create `exercises/N_topic/practice/` and `solution/` with `build.gradle.kts`/`settings.gradle.kts` and `src/`
 2. Create `track/NN-topic/` directory
 3. Copy scripts from an existing challenge, update paths and exercise number
 4. Write `assignment.md` — no `id:` field, slug = directory minus `NN-` prefix, hostname = `workshop`

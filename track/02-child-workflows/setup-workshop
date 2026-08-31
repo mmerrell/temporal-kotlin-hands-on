@@ -6,4 +6,4 @@ cp -r /opt/exercises/2_child_workflows/practice /workspace/exercise
 cp -r /opt/exercises/2_child_workflows/solution /workspace/solution
 
 echo "Exercise 2 ready."
-echo "Files are in /workspace/exercise/src/main/java/fulfillment/"
+echo "Files are in /workspace/exercise/src/main/kotlin/fulfillment/"

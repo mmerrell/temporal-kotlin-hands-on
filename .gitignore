@@ -6,8 +6,10 @@
 *.iml
 *.iws
 
-## Maven build output (in exercises/)
-exercises/**/target/
+## Gradle/Kotlin build output (in exercises/)
+exercises/**/build/
+exercises/**/.gradle/
+exercises/**/.kotlin/
 
 ## Local Docker build artifacts
 *.tar

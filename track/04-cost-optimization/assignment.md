@@ -1,9 +1,10 @@
 ---
 slug: cost-optimization
-id: tj5ep5lf8mne
+id: gd9fodrlp6vl
 type: challenge
-title: 'Exercise 4: Cost Optimization with Local Activities'
+title: 'Exercise 4: Local Activities'
 teaser: Move fast in-process steps to Local Activities to cut Temporal Cloud Actions.
+  Exercise 6 goes after the bigger levers.
 notes:
 - type: text
   contents: |-
@@ -26,23 +27,22 @@ notes:
 
     Hit **Start** when you're ready.
 tabs:
-- id: pglzy9kbfevz
-  title: VS Code
-  type: service
+- id: y8phx1eergab
+  title: Code Editor
+  type: code
   hostname: workshop
-  path: ?folder=/workspace/exercise&openFile=/workspace/exercise/src/main/java/fulfillment/LocalFulfillmentActivities.java&openFile=/workspace/exercise/src/main/java/fulfillment/FulfillmentWorkflowImpl.java
-  port: 8443
-- id: 7nuetgdclb5n
+  path: /workspace/exercise
+- id: b1wvl3wbqayy
   title: Terminal 1 - Worker
   type: terminal
   hostname: workshop
   workdir: /workspace/exercise
-- id: eeosujydpw6m
+- id: tqjlxxxvgn9c
   title: Terminal 2 - Starter
   type: terminal
   hostname: workshop
   workdir: /workspace/exercise
-- id: xxngxgmvz5mw
+- id: 21uh6hmbboc6
   title: Temporal Web UI
   type: service
   hostname: workshop
@@ -53,13 +53,13 @@ timelimit: 2400
 enhanced_loading: null
 ---
 
-## Exercise 4: Cost Optimization with Local Activities
+## Exercise 4: Local Activities
 
-All your work is in **`FulfillmentWorkflowImpl.java`** (active tab).
-`LocalFulfillmentActivities.java` is open in a second tab — review it to see what methods are available.
+All your work is in **`FulfillmentWorkflowImpl.kt`** (active tab).
+`LocalFulfillmentActivities.kt` is open in a second tab — review it to see what methods are available.
 
-Files are in `/workspace/exercise/src/main/java/fulfillment/`.
-Look for the two `// TODO` blocks — one at the field declaration, one inside `processOrder()`.
+Files are in `/workspace/exercise/src/main/kotlin/fulfillment/`.
+Look for the two `TODO(...)` markers — one at the field declaration, one inside `processOrder()`.
 
 ***
 
@@ -71,13 +71,13 @@ The key differences from a regular activity stub:
 - Use `LocalActivityOptions` (not `ActivityOptions`)
 - Use `Workflow.newLocalActivityStub()` (not `Workflow.newActivityStub()`)
 
-```java
-private final LocalFulfillmentActivities localActivities = Workflow.newLocalActivityStub(
-    LocalFulfillmentActivities.class,
+```kotlin
+private val localActivities: LocalFulfillmentActivities = Workflow.newLocalActivityStub(
+    LocalFulfillmentActivities::class.java,
     LocalActivityOptions.newBuilder()
         .setStartToCloseTimeout(Duration.ofSeconds(5))
         .build()
-);
+)
 ```
 
 A 5-second timeout is appropriate — if `validateOrder` or `fraudCheck` take longer
@@ -89,9 +89,9 @@ than 5 seconds, something is wrong.
 
 Add these two calls at the top of `processOrder()`, **before** the child workflow invocation:
 
-```java
-localActivities.validateOrder(order);
-localActivities.fraudCheck(order);
+```kotlin
+localActivities.validateOrder(order)
+localActivities.fraudCheck(order)
 ```
 
 These run synchronously in the Worker process — no round-trip to the Temporal Server.
@@ -103,13 +103,13 @@ These run synchronously in the Worker process — no round-trip to the Temporal 
 1. Click the [button label="Terminal 1 - Worker" background="#444CE7"](tab-1) tab and start the Worker:
 
    ```bash,run
-   mvn compile exec:java -Dexec.mainClass="fulfillment.FulfillmentWorker"
+   gradle runWorker
    ```
 
 2. Click the [button label="Terminal 2 - Starter" background="#444CE7"](tab-2) tab and run the Starter:
 
    ```bash,run
-   mvn exec:java -Dexec.mainClass="fulfillment.Starter"
+   gradle runStarter
    ```
 
 In the [button label="Temporal Web UI" background="#444CE7"](tab-3), open `fulfillment-ORD-1004` and inspect the Event History.

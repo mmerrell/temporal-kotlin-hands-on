@@ -1,6 +1,6 @@
 ---
 slug: parallel-activities
-id: jxuystyteaj8
+id: frwdpf5xe5aj
 type: challenge
 title: 'Exercise 3: Parallel Activities'
 teaser: Fan out warehouse checks concurrently with Async.function() and Promise.allOf().
@@ -16,29 +16,28 @@ notes:
     The same fan-out pattern applies anywhere you're processing many independent
     items: containers, SKUs, payment methods, notification channels.
 
-    The Java SDK is **synchronous by default** — you have to explicitly opt in
+    The Temporal SDK is **synchronous by default** — you have to explicitly opt in
     to concurrency using `Async.function()`. This makes concurrent code readable
     and keeps it deterministic for replay.
 
     Hit **Start** when you're ready.
 tabs:
-- id: 0qo9f1nhuz0c
-  title: VS Code
-  type: service
+- id: lbucwqwjcjq0
+  title: Code Editor
+  type: code
   hostname: workshop
-  path: ?folder=/workspace/exercise&openFile=/workspace/exercise/src/main/java/fulfillment/FulfillmentWorkflowImpl.java&openFile=/workspace/exercise/src/main/java/fulfillment/InventoryReservationWorkflowImpl.java
-  port: 8443
-- id: xscxon9ztytk
+  path: /workspace/exercise
+- id: gapb6ymsevew
   title: Terminal 1 - Worker
   type: terminal
   hostname: workshop
   workdir: /workspace/exercise
-- id: omgwavx03gl8
+- id: 6cwewethblmm
   title: Terminal 2 - Starter
   type: terminal
   hostname: workshop
   workdir: /workspace/exercise
-- id: yj4oa85lxsws
+- id: fnwqrqyydiwz
   title: Temporal Web UI
   type: service
   hostname: workshop
@@ -51,10 +50,10 @@ enhanced_loading: null
 
 ## Exercise 3: Parallel Activities
 
-All your work is in **`InventoryReservationWorkflowImpl.java`** (active tab).
+All your work is in **`InventoryReservationWorkflowImpl.kt`** (active tab).
 The activity stub is already wired up — focus on the `reserve()` method.
 
-Files are in `/workspace/exercise/src/main/java/fulfillment/`.
+Files are in `/workspace/exercise/src/main/kotlin/fulfillment/`.
 
 ***
 
@@ -62,13 +61,12 @@ Files are in `/workspace/exercise/src/main/java/fulfillment/`.
 
 For each `warehouseId` in `WAREHOUSES`, launch the activity concurrently:
 
-```java
-for (String warehouseId : WAREHOUSES) {
-    Promise<String> p = Async.function(
+```kotlin
+val promises: List<Promise<String>> = WAREHOUSES.map { warehouseId ->
+    Async.function(
         warehouseActivities::checkWarehouseInventory,
         warehouseId, sku, quantity
-    );
-    promises.add(p);
+    )
 }
 ```
 
@@ -79,8 +77,8 @@ All six `checkWarehouseInventory` calls are in-flight simultaneously.
 
 ### Part B – Wait with Promise.allOf()
 
-```java
-Promise.allOf(promises).get();
+```kotlin
+Promise.allOf(promises).get()
 ```
 
 This blocks the workflow durably until **every** promise resolves.
@@ -90,14 +88,14 @@ If the worker restarts mid-wait, Temporal replays the promises from history.
 
 ### Part C – Return the first success
 
-```java
-for (Promise<String> p : promises) {
-    String result = p.get();
+```kotlin
+for (p in promises) {
+    val result = p.get()
     if (result != null) {
-        return result;
+        return result
     }
 }
-throw ApplicationFailure.newNonRetryableFailure("No stock available", "OutOfStock");
+throw ApplicationFailure.newNonRetryableFailure("No stock available", "OutOfStock")
 ```
 
 ***
@@ -107,13 +105,13 @@ throw ApplicationFailure.newNonRetryableFailure("No stock available", "OutOfStoc
 1. Click the [button label="Terminal 1 - Worker" background="#444CE7"](tab-1) tab and start the Worker:
 
    ```bash,run
-   mvn compile exec:java -Dexec.mainClass="fulfillment.FulfillmentWorker"
+   gradle runWorker
    ```
 
 2. Click the [button label="Terminal 2 - Starter" background="#444CE7"](tab-2) tab and run the Starter:
 
    ```bash,run
-   mvn exec:java -Dexec.mainClass="fulfillment.Starter"
+   gradle runStarter
    ```
 
 In the [button label="Temporal Web UI" background="#444CE7"](tab-3), open `inventory-ORD-1003`. Look at the Event History —

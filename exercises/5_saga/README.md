@@ -30,7 +30,7 @@ temporal server start-dev
 
 ## Part A: Understand the domain
 
-Open `FulfillmentActivities.java`. It has five methods:
+Open `FulfillmentActivities.kt`. It has five methods:
 
 **Forward steps:** `reserveInventory`, `processPayment`, `dispatchToFulfillment`
 
@@ -41,43 +41,43 @@ completed, so there's nothing to undo.
 
 ## Part B: Wrap the forward steps in try/catch
 
-In `FulfillmentWorkflowImpl.java`, replace the placeholder with the three
+In `FulfillmentWorkflowImpl.kt`, replace the placeholder with the three
 activity calls inside a `try` block. The state variables `reservationId` and
 `paymentConfirmation` are already declared as `null` before the `try` — this is
 intentional so the `catch` block can read them.
 
-```java
-reservationId = activities.reserveInventory(order);
-paymentConfirmation = activities.processPayment(order);
-String trackingNumber = activities.dispatchToFulfillment(order, reservationId);
-return new OrderResult(order.getOrderId(), "FULFILLED",
-    reservationId, paymentConfirmation, trackingNumber);
+```kotlin
+reservationId = activities.reserveInventory(order)
+paymentConfirmation = activities.processPayment(order)
+val trackingNumber = activities.dispatchToFulfillment(order, reservationId)
+return OrderResult(order.orderId, "FULFILLED",
+    reservationId, paymentConfirmation, trackingNumber)
 ```
 
 ## Part C: Compensate in reverse order
 
-In `catch (Exception e)`, run compensating activities only for the steps that
+In `catch (e: Exception)`, run compensating activities only for the steps that
 completed. Guard each call on null — if a step never ran, the variable is still
 `null` and there's nothing to undo:
 
-```java
+```kotlin
 if (paymentConfirmation != null) {
-    activities.refundPayment(paymentConfirmation);
+    activities.refundPayment(paymentConfirmation)
 }
 if (reservationId != null) {
-    activities.releaseInventory(reservationId);
+    activities.releaseInventory(reservationId)
 }
-return new OrderResult(order.getOrderId(), "FAILED", reservationId, paymentConfirmation, null);
+return OrderResult(order.orderId, "FAILED", reservationId, paymentConfirmation, null)
 ```
 
 ## Part D: Run It and Observe
 
 ```bash
 # Terminal 1
-mvn compile exec:java -Dexec.mainClass="fulfillment.FulfillmentWorker"
+gradle runWorker
 
 # Terminal 2
-mvn exec:java -Dexec.mainClass="fulfillment.Starter"
+gradle runStarter
 ```
 
 `dispatchToFulfillment` has a 30% failure rate. Run the Starter a few times

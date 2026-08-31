@@ -1,12 +1,12 @@
-# temporal-java-sandbox
-# Base image for the Temporal Java SDK hands-on lab (Instruqt).
+# temporal-kotlin-sandbox
+# Base image for the Temporal Kotlin hands-on lab (Instruqt).
 #
 # Contains:
 #   - Eclipse Temurin JDK 17 (LTS)
-#   - Maven 3.9
+#   - Gradle 9.6 (Kotlin plugin resolves the Kotlin compiler as a build dependency)
 #   - Temporal CLI (latest)
-#   - All five exercise directories baked into /opt/exercises/
-#   - Maven dependency cache pre-warmed for all five exercises
+#   - All six exercise directories baked into /opt/exercises/
+#   - Gradle dependency cache pre-warmed (jars, not just metadata)
 #
 # The Temporal server is started by the Instruqt track setup script using
 # `nohup temporal server start-dev`. This image is for the learner's sandbox only.
@@ -26,17 +26,17 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     bash-completion \
     && rm -rf /var/lib/apt/lists/*
 
-# ─── Maven 3.9 ────────────────────────────────────────────────────────────────
-ARG MAVEN_VERSION=3.9.9
-RUN wget -q "https://archive.apache.org/dist/maven/maven-3/${MAVEN_VERSION}/binaries/apache-maven-${MAVEN_VERSION}-bin.tar.gz" \
-    -O /tmp/maven.tar.gz \
-    && tar -xzf /tmp/maven.tar.gz -C /opt \
-    && ln -s /opt/apache-maven-${MAVEN_VERSION} /opt/maven \
-    && ln -s /opt/maven/bin/mvn /usr/local/bin/mvn \
-    && rm /tmp/maven.tar.gz
+# ─── Gradle 9.6 ───────────────────────────────────────────────────────────────
+ARG GRADLE_VERSION=9.6.1
+RUN wget -q "https://services.gradle.org/distributions/gradle-${GRADLE_VERSION}-bin.zip" \
+    -O /tmp/gradle.zip \
+    && unzip -q /tmp/gradle.zip -d /opt \
+    && ln -s /opt/gradle-${GRADLE_VERSION} /opt/gradle \
+    && ln -s /opt/gradle/bin/gradle /usr/local/bin/gradle \
+    && rm /tmp/gradle.zip
 
-ENV MAVEN_HOME=/opt/maven
-ENV PATH="${MAVEN_HOME}/bin:${PATH}"
+ENV GRADLE_HOME=/opt/gradle
+ENV PATH="${GRADLE_HOME}/bin:${PATH}"
 
 # ─── Temporal CLI ─────────────────────────────────────────────────────────────
 ARG TEMPORAL_CLI_VERSION=1.3.0
@@ -56,33 +56,37 @@ WORKDIR /home/user
 #   3_parallel_activities/practice/ and 3_parallel_activities/solution/
 #   4_cost_optimization/practice/ and 4_cost_optimization/solution/
 #   5_saga/practice/ and 5_saga/solution/
+#   6_cost_deep_dive/practice/ and 6_cost_deep_dive/solution/
 COPY exercises/ /opt/exercises/
 RUN chown -R user:user /opt/exercises
 
-# ─── Pre-warm Maven dependency cache ─────────────────────────────────────────
-# Resolves all dependencies for all ten pom.xml files (practice + solution)
-# so learner containers start without downloading anything.
+# ─── Pre-warm Gradle dependency cache ────────────────────────────────────────
+# `gradle dependencies` resolves the dependency GRAPH but never downloads the
+# artifact jars, so it does not actually warm anything a compile needs. Running
+# a real compileKotlin does: it pulls every jar plus the Kotlin compiler.
+#
+# Only the solution/ projects are warmed. Every exercise declares identical
+# dependencies and Gradle's artifact cache is global, so warming one project
+# warms them all — and solutions are reference implementations, so a compile
+# failure here is a genuine CI signal rather than an expected practice stub.
 USER user
 RUN for dir in \
-      /opt/exercises/1_converting/practice \
       /opt/exercises/1_converting/solution \
-      /opt/exercises/2_child_workflows/practice \
       /opt/exercises/2_child_workflows/solution \
-      /opt/exercises/3_parallel_activities/practice \
       /opt/exercises/3_parallel_activities/solution \
-      /opt/exercises/4_cost_optimization/practice \
       /opt/exercises/4_cost_optimization/solution \
-      /opt/exercises/5_saga/practice \
-      /opt/exercises/5_saga/solution; \
+      /opt/exercises/5_saga/solution \
+      /opt/exercises/6_cost_deep_dive/solution; \
     do \
-      echo "Warming Maven cache for $dir..." && \
-      mvn -f "$dir/pom.xml" dependency:resolve -q; \
-    done
+      echo "Warming Gradle cache for $dir..." && \
+      gradle -p "$dir" compileKotlin -q; \
+    done \
+    && rm -rf /opt/exercises/*/solution/build
 
 # ─── Shell environment ────────────────────────────────────────────────────────
 RUN echo 'export TEMPORAL_ADDRESS="${TEMPORAL_ADDRESS:-127.0.0.1:7233}"' >> /home/user/.bashrc \
     && echo 'alias tl="temporal workflow list --address ${TEMPORAL_ADDRESS}"' >> /home/user/.bashrc \
-    && echo 'alias mvnw="mvn compile exec:java"' >> /home/user/.bashrc
+    && echo 'alias gw="gradle"' >> /home/user/.bashrc
 
 USER root
 

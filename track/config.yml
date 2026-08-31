@@ -1,6 +1,6 @@
 version: "3"
 containers:
 - name: workshop
-  image: ghcr.io/mmerrell/temporal-java-sandbox:latest
+  image: ghcr.io/mmerrell/temporal-kotlin-sandbox:latest
   shell: /bin/bash
   memory: 4096

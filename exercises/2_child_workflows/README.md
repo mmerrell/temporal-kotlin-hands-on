@@ -16,8 +16,8 @@ temporal server start-dev
 
 ## Part A: Create the WarehouseActivities stub
 
-Open `InventoryReservationWorkflowImpl.java` and create a `WarehouseActivities` stub
-with a 15-second `StartToCloseTimeout`.
+Open `InventoryReservationWorkflowImpl.kt` and create a `WarehouseActivities` stub
+with a 30-second `StartToCloseTimeout`.
 
 ## Part B: Implement the child workflow logic
 
@@ -27,17 +27,17 @@ Return the first non-null result. If all return null, throw a non-retryable
 
 ## Part C: Call the child from the parent
 
-Open `FulfillmentWorkflowImpl.java`. Use `Workflow.newChildWorkflowStub(...)` with
-`ChildWorkflowOptions` that set `workflowId = "inventory-" + order.getOrderId()`.
+Open `FulfillmentWorkflowImpl.kt`. Use `Workflow.newChildWorkflowStub(...)` with
+`ChildWorkflowOptions` that set `workflowId = "inventory-${order.orderId}"`.
 
 ## Part D: Run It
 
 ```bash
 # Terminal 1
-mvn compile exec:java -Dexec.mainClass="fulfillment.FulfillmentWorker"
+gradle runWorker
 
 # Terminal 2
-mvn exec:java -Dexec.mainClass="fulfillment.Starter"
+gradle runStarter
 ```
 
 In the Web UI, find both `fulfillment-ORD-1002` and `inventory-ORD-1002`.

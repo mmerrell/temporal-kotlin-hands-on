@@ -1,6 +1,6 @@
 #!/bin/bash
 EXERCISE_DIR="/workspace/exercise"
-INVENTORY_IMPL="$EXERCISE_DIR/src/main/java/fulfillment/InventoryReservationWorkflowImpl.java"
+INVENTORY_IMPL="$EXERCISE_DIR/src/main/kotlin/fulfillment/InventoryReservationWorkflowImpl.kt"
 
 fail() { echo "FAIL: $1"; exit 1; }
 pass() { echo "PASS: $1"; }
@@ -30,14 +30,14 @@ if ! grep -q "OutOfStock" "$INVENTORY_IMPL"; then
 fi
 pass "OutOfStock failure present"
 
-if grep -q "^        return null" "$INVENTORY_IMPL"; then
-  fail "reserve() still returns null. Implement the result-collection loop."
+if grep -q "TODO(" "$INVENTORY_IMPL"; then
+  fail "reserve() is still unimplemented. Implement the result-collection loop."
 fi
 pass "reserve() returns a real result"
 
-echo "Running mvn compile..."
+echo "Running gradle compileKotlin..."
 cd "$EXERCISE_DIR"
-if ! mvn compile -q 2>&1; then
+if ! gradle compileKotlin -q 2>&1; then
   fail "Project does not compile. Fix compilation errors above and try again."
 fi
 pass "Project compiles successfully"
