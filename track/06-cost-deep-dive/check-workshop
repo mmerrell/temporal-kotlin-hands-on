@@ -1,0 +1,90 @@
+#!/bin/bash
+EXERCISE_DIR="/workspace/exercise"
+SRC="$EXERCISE_DIR/src/main/kotlin/fulfillment"
+
+fail() { echo "FAIL: $1"; exit 1; }
+
+# This check is deliberately forgiving. There is more than one reasonable way to
+# cut the cost of this Workflow, so it reports what it found rather than
+# insisting on one exact shape. Compiling is the only hard requirement.
+
+# The TODO comments in the practice code quote the very expressions we are looking
+# for, so every grep below runs against a comment-stripped copy. Without this, the
+# instructions read as a finished implementation.
+strip_comments() { sed -e 's://.*::' -e '/^[[:space:]]*$/d' "$1" 2>/dev/null; }
+
+WORKFLOW=$(strip_comments "$SRC/DamageClaimWorkflowImpl.kt")
+ANALYZER=$(strip_comments "$SRC/EvidenceAnalyzer.kt")
+CONFIG=$(strip_comments "$SRC/Config.kt")
+
+if [[ -z "$WORKFLOW" ]]; then
+  fail "Can't find $SRC/DamageClaimWorkflowImpl.kt — is the exercise still in place?"
+fi
+
+done_count=0
+
+# ── Fix 1: one wait instead of a timer loop ──────────────────────────────────
+timers="not yet"
+if grep -q "Workflow.await(" <<< "$WORKFLOW"; then
+  done_count=$((done_count + 1))
+  if grep -q "Workflow.sleep(" <<< "$WORKFLOW"; then
+    timers="partly — Workflow.await() is in place, but a Workflow.sleep() call is still there"
+  else
+    timers="done"
+  fi
+fi
+
+# ── Fix 2: evidence reference instead of the whole claim ─────────────────────
+payloads="not yet"
+if grep -qE "leanActivities\.(storeEvidence|prepareClaim)" <<< "$WORKFLOW"; then
+  done_count=$((done_count + 1))
+  if grep -qE "\bactivities\.(validateClaim|normalizeCustomerName|extractProductMetadata)" <<< "$WORKFLOW"; then
+    payloads="partly — the lean pipeline is in use, but some full-claim Activity calls remain"
+  elif grep -q "claim = workingClaim" <<< "$WORKFLOW"; then
+    payloads="partly — the pipeline is lean, but the full claim is still returned in ClaimResult"
+  else
+    payloads="done"
+  fi
+fi
+
+# ── Fix 3: heartbeat on checkpoints, not on every step ───────────────────────
+heartbeats="not yet"
+if grep -q "HEARTBEAT_EVERY_N_STEPS" <<< "$ANALYZER"; then
+  done_count=$((done_count + 1))
+  every=$(grep -oE "HEARTBEAT_EVERY_N_STEPS *= *[0-9]+" <<< "$CONFIG" | grep -oE "[0-9]+$")
+  timeout=$(grep -oE "HEARTBEAT_TIMEOUT_SECONDS *= *[0-9]+" <<< "$CONFIG" | grep -oE "[0-9]+$")
+  if [[ -z "$every" || "$every" -le 1 ]]; then
+    heartbeats="partly — the checkpoint guard is in place, but HEARTBEAT_EVERY_N_STEPS is still 1"
+  elif [[ -n "$timeout" && "$timeout" -le "$every" ]]; then
+    heartbeats="partly — checkpoints every $every steps, but HEARTBEAT_TIMEOUT_SECONDS is only ${timeout}s. The timeout has to outlast the gap between heartbeats or the Activity times out mid-analysis."
+  else
+    heartbeats="done"
+  fi
+fi
+
+echo "Timer loop .......... $timers"
+echo "Evidence payloads ... $payloads"
+echo "Heartbeat frequency . $heartbeats"
+echo ""
+
+if [[ "$done_count" -eq 0 ]]; then
+  fail "No changes detected yet. Start with the timer loop in DamageClaimWorkflowImpl.kt — it's the smallest edit and the biggest saving. See Part A in the assignment."
+fi
+
+echo "Running gradle compileKotlin..."
+cd "$EXERCISE_DIR" || fail "Can't enter $EXERCISE_DIR"
+if ! gradle compileKotlin -q --no-watch-fs 2>&1; then
+  fail "Project does not compile. Fix the errors above and try again."
+fi
+echo "Project compiles successfully."
+echo ""
+
+if [[ "$done_count" -lt 3 ]]; then
+  echo "✅ Passing with $done_count of 3 optimizations in place."
+  echo "   Run it again and compare the Event History against your baseline numbers,"
+  echo "   then come back for the rest. Solve shows all three."
+else
+  echo "✅ All three optimizations in place."
+  echo "   Re-run the Worker and Starter, then compare against the baseline numbers"
+  echo "   you wrote down in Part 1."
+fi

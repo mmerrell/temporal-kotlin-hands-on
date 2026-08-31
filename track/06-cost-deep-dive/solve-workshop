@@ -1,0 +1,8 @@
+#!/bin/bash
+cp -r /workspace/solution/src/. /workspace/exercise/src/
+cd /workspace/exercise && gradle compileKotlin -q
+echo "Solution applied. Compare the three changed files:"
+echo "  Config.kt                 — heartbeat checkpoint interval and its coupled timeout"
+echo "  EvidenceAnalyzer.kt       — heartbeat on checkpoints instead of every step"
+echo "  DamageClaimWorkflowImpl.kt — evidence reference instead of the full claim,"
+echo "                               and one Workflow.await instead of a sleep loop"
