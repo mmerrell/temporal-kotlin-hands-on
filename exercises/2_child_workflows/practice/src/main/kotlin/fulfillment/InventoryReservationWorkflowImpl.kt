@@ -1,6 +1,9 @@
 package fulfillment
 
+import io.temporal.activity.ActivityOptions
+import io.temporal.failure.ApplicationFailure
 import io.temporal.workflow.Workflow
+import java.time.Duration
 
 class InventoryReservationWorkflowImpl : InventoryReservationWorkflow {
 

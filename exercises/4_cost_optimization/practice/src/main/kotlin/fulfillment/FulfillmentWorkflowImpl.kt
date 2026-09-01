@@ -1,6 +1,7 @@
 package fulfillment
 
 import io.temporal.activity.ActivityOptions
+import io.temporal.activity.LocalActivityOptions
 import io.temporal.workflow.ChildWorkflowOptions
 import io.temporal.workflow.Workflow
 import java.time.Duration
