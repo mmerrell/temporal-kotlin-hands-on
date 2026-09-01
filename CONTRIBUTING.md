@@ -70,7 +70,9 @@ temporal-kotlin-hands-on/
 │   ├── 3_parallel_activities/
 │   ├── 4_cost_optimization/
 │   ├── 5_saga/
-│   └── 6_cost_deep_dive/
+│   ├── 6a_cost_timers/
+│   ├── 6b_cost_payloads/
+│   └── 6c_cost_heartbeats/
 ├── scripts/
 │   └── bootstrap-exercises.sh  Copies exercises from a workshop repo
 │                               into exercises/ (run once per source repo)
@@ -94,7 +96,9 @@ temporal-kotlin-hands-on/
     ├── 03-parallel-activities/
     ├── 04-cost-optimization/
     ├── 05-saga/
-    └── 06-cost-deep-dive/
+    ├── 06a-cost-timers/
+    ├── 06b-cost-payloads/
+    └── 06c-cost-heartbeats/
 ```
 
 ---

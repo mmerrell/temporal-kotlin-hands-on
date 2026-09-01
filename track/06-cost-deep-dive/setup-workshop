@@ -1,9 +1,0 @@
-#!/bin/bash
-set -euo pipefail
-
-rm -rf /workspace/exercise /workspace/solution
-cp -r /opt/exercises/6_cost_deep_dive/practice /workspace/exercise
-cp -r /opt/exercises/6_cost_deep_dive/solution /workspace/solution
-
-echo "Exercise 6 ready."
-echo "Files are in /workspace/exercise/src/main/kotlin/fulfillment/"

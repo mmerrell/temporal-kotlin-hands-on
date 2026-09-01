@@ -1,0 +1,4 @@
+#!/bin/bash
+cp -r /workspace/solution/src/. /workspace/exercise/src/
+cd /workspace/exercise && gradle compileKotlin -q --no-watch-fs
+echo "Solution applied. Review DamageClaimWorkflowImpl.kt — the lean pipeline, carrying a reference instead of the document"

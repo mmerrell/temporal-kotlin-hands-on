@@ -2,10 +2,10 @@ slug: temporal-kotlin-hands-on
 id: khqnzcdrv70p
 title: Temporal Kotlin – Hands-On Lab
 teaser: Build a durable order-fulfillment system with the Temporal Java SDK from Kotlin
-  — activities, child workflows, parallel fan-out, the Saga pattern, and cutting
-  Temporal Cloud cost.
+  — activities, child workflows, parallel fan-out, the Saga pattern, and cutting Temporal
+  Cloud cost.
 description: |-
-  Six progressive coding challenges using the Temporal Java SDK from Kotlin. Each challenge drops you into a partially-implemented order fulfillment workflow and asks you to fill in the missing pieces.
+  Eight progressive coding challenges using the Temporal Java SDK from Kotlin. Each challenge drops you into a partially-implemented order fulfillment workflow and asks you to fill in the missing pieces.
 
   **What you'll build:**
 
@@ -14,7 +14,9 @@ description: |-
   - **Exercise 3 – Parallel Activities:** Fan out warehouse checks concurrently with `Async.function()` and `Promise.allOf()`.
   - **Exercise 4 – Local Activities:** Move fast in-process steps to Local Activities to reduce Temporal Cloud Actions.
   - **Exercise 5 – Saga Pattern:** Implement compensating transactions so multi-step workflows clean up after themselves on failure.
-  - **Exercise 6 – Payloads, Timers, and Heartbeats:** Measure what one execution costs in Event History, then cut it — without weakening durability.
+  - **Exercise 6a – Timers:** Measure what one execution costs in Event History, then replace a polling loop with a single wait.
+  - **Exercise 6b – Payloads:** Move a few hundred KB of business data out of Workflow History without changing the outcome.
+  - **Exercise 6c – Heartbeats:** Tune heartbeat frequency to what failure detection needs, and find the setting that actually drives the cost.
 
   Each challenge includes a **Web UI** tab so you can watch your workflows execute in real time, and a **Solve** button if you get stuck.
 
@@ -34,8 +36,9 @@ lab_config:
   feedback_recap_enabled: true
   feedback_tab_enabled: true
   loadingMessages: true
+  override_challenge_layout: false
   hideStopButton: false
   default_layout: AssignmentLeft
   default_layout_sidebar_size: 35
-checksum: "7139051561018500342"
+checksum: "18174269726398135818"
 enhanced_loading: false

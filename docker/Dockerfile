@@ -5,7 +5,7 @@
 #   - Eclipse Temurin JDK 17 (LTS)
 #   - Gradle 9.6 (Kotlin plugin resolves the Kotlin compiler as a build dependency)
 #   - Temporal CLI (latest)
-#   - All six exercise directories baked into /opt/exercises/
+#   - All eight exercise directories baked into /opt/exercises/
 #   - Gradle dependency cache pre-warmed (jars, not just metadata)
 #
 # The Temporal server is started by the Instruqt track setup script using
@@ -56,7 +56,9 @@ WORKDIR /home/user
 #   3_parallel_activities/practice/ and 3_parallel_activities/solution/
 #   4_cost_optimization/practice/ and 4_cost_optimization/solution/
 #   5_saga/practice/ and 5_saga/solution/
-#   6_cost_deep_dive/practice/ and 6_cost_deep_dive/solution/
+#   6a_cost_timers/practice/ and 6a_cost_timers/solution/
+#   6b_cost_payloads/practice/ and 6b_cost_payloads/solution/
+#   6c_cost_heartbeats/practice/ and 6c_cost_heartbeats/solution/
 COPY exercises/ /opt/exercises/
 RUN chown -R user:user /opt/exercises
 
@@ -76,7 +78,9 @@ RUN for dir in \
       /opt/exercises/3_parallel_activities/solution \
       /opt/exercises/4_cost_optimization/solution \
       /opt/exercises/5_saga/solution \
-      /opt/exercises/6_cost_deep_dive/solution; \
+      /opt/exercises/6a_cost_timers/solution \
+      /opt/exercises/6b_cost_payloads/solution \
+      /opt/exercises/6c_cost_heartbeats/solution; \
     do \
       echo "Warming Gradle cache for $dir..." && \
       gradle -p "$dir" compileKotlin -q; \

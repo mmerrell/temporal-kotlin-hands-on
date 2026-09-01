@@ -1,0 +1,46 @@
+#!/bin/bash
+EXERCISE_DIR="/workspace/exercise"
+SRC="$EXERCISE_DIR/src/main/kotlin/fulfillment"
+
+fail() { echo "FAIL: $1"; exit 1; }
+
+# The practice TODOs quote the exact expressions being matched, so every grep runs
+# against a comment-stripped copy. Without this, the instructions read as a
+# finished implementation.
+strip_comments() { sed -e "s://.*::" -e "/^[[:space:]]*$/d" "$1" 2>/dev/null; }
+
+compile_or_fail() {
+  echo "Running gradle compileKotlin..."
+  cd "$EXERCISE_DIR" || fail "Can't enter $EXERCISE_DIR"
+  if ! gradle compileKotlin -q --no-watch-fs 2>&1; then
+    fail "Project does not compile. Fix the errors above and try again."
+  fi
+  echo "Project compiles successfully."
+}
+
+ANALYZER=$(strip_comments "$SRC/EvidenceAnalyzer.kt")
+CONFIG=$(strip_comments "$SRC/Config.kt")
+[[ -n "$ANALYZER" ]] || fail "Can't find EvidenceAnalyzer.kt — is the exercise still in place?"
+
+if ! grep -q "HEARTBEAT_EVERY_N_STEPS" <<< "$ANALYZER"; then
+  fail "The analysis still heartbeats on every step. Guard the heartbeat call with: if (step % Config.HEARTBEAT_EVERY_N_STEPS == 0) { ... }"
+fi
+echo "Checkpoint guard in place"
+
+every=$(grep -oE "HEARTBEAT_EVERY_N_STEPS *= *[0-9]+" <<< "$CONFIG" | grep -oE "[0-9]+$")
+timeout=$(grep -oE "HEARTBEAT_TIMEOUT_SECONDS *= *[0-9]+" <<< "$CONFIG" | grep -oE "[0-9]+$")
+
+if [[ -z "$every" || "$every" -le 1 ]]; then
+  fail "The guard is there, but HEARTBEAT_EVERY_N_STEPS is still 1, so it still heartbeats every step. Raise it in Config.kt."
+fi
+echo "Checkpoint interval: every $every steps"
+
+if [[ -n "$timeout" && "$timeout" -le "$every" ]]; then
+  fail "HEARTBEAT_TIMEOUT_SECONDS is ${timeout}s but heartbeats are now ${every}s apart. The timeout has to outlast the gap or the Activity times out mid-analysis. Raise it in Config.kt."
+fi
+echo "Heartbeat timeout: ${timeout}s — comfortably longer than the ${every}s gap"
+
+compile_or_fail
+echo ""
+echo "✅ Heartbeats now track progress rather than the clock."
+echo "   Re-run and compare the heartbeat RPC count against the baseline."

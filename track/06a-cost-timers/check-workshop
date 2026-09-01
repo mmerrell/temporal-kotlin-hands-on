@@ -1,0 +1,37 @@
+#!/bin/bash
+EXERCISE_DIR="/workspace/exercise"
+SRC="$EXERCISE_DIR/src/main/kotlin/fulfillment"
+
+fail() { echo "FAIL: $1"; exit 1; }
+
+# The practice TODOs quote the exact expressions being matched, so every grep runs
+# against a comment-stripped copy. Without this, the instructions read as a
+# finished implementation.
+strip_comments() { sed -e "s://.*::" -e "/^[[:space:]]*$/d" "$1" 2>/dev/null; }
+
+compile_or_fail() {
+  echo "Running gradle compileKotlin..."
+  cd "$EXERCISE_DIR" || fail "Can't enter $EXERCISE_DIR"
+  if ! gradle compileKotlin -q --no-watch-fs 2>&1; then
+    fail "Project does not compile. Fix the errors above and try again."
+  fi
+  echo "Project compiles successfully."
+}
+
+WORKFLOW=$(strip_comments "$SRC/DamageClaimWorkflowImpl.kt")
+[[ -n "$WORKFLOW" ]] || fail "Can't find DamageClaimWorkflowImpl.kt — is the exercise still in place?"
+
+if ! grep -q "Workflow.await(" <<< "$WORKFLOW"; then
+  fail "No Workflow.await() yet. Replace the appeal loop with a single wait over the whole window: Workflow.await(Duration.ofSeconds(Config.APPEAL_WINDOW_SECONDS)) { appealReceived }"
+fi
+echo "Workflow.await() in place"
+
+if grep -q "Workflow.sleep(" <<< "$WORKFLOW"; then
+  echo "Note: a Workflow.sleep() call is still in the file. That's fine if you meant"
+  echo "      to keep it, but the polling loop shouldn't be needed any more."
+fi
+
+compile_or_fail
+echo ""
+echo "✅ One timer now covers the whole appeal window."
+echo "   Re-run and compare TIMER_STARTED against the baseline you wrote down."

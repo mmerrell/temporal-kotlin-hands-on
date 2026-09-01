@@ -1,6 +1,6 @@
 # Temporal Kotlin Hands-On Lab
 
-Instruqt track: six progressive coding challenges using the Temporal Java SDK from Kotlin.
+Instruqt track: eight progressive coding challenges using the Temporal Java SDK from Kotlin.
 Built on a durable order-fulfillment scenario (inventory reservation, payment, dispatch)
 that mirrors real production patterns.
 
@@ -28,7 +28,9 @@ temporal-kotlin-hands-on/
 │   ├── 3_parallel_activities/
 │   ├── 4_cost_optimization/
 │   ├── 5_saga/
-│   └── 6_cost_deep_dive/
+│   ├── 6a_cost_timers/
+│   ├── 6b_cost_payloads/
+│   └── 6c_cost_heartbeats/
 ├── scripts/
 │   └── bootstrap-exercises.sh      # Populate exercises/ from any workshop repo
 ├── track/                          # Instruqt track definition
@@ -44,7 +46,9 @@ temporal-kotlin-hands-on/
 │   ├── 03-parallel-activities/
 │   ├── 04-cost-optimization/
 │   ├── 05-saga/
-│   └── 06-cost-deep-dive/
+│   ├── 06a-cost-timers/
+│   ├── 06b-cost-payloads/
+│   └── 06c-cost-heartbeats/
 └── .github/workflows/build-image.yml  # Rebuilds sandbox image on push to main
 ```
 

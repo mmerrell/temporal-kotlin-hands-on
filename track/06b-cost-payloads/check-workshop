@@ -1,0 +1,43 @@
+#!/bin/bash
+EXERCISE_DIR="/workspace/exercise"
+SRC="$EXERCISE_DIR/src/main/kotlin/fulfillment"
+
+fail() { echo "FAIL: $1"; exit 1; }
+
+# The practice TODOs quote the exact expressions being matched, so every grep runs
+# against a comment-stripped copy. Without this, the instructions read as a
+# finished implementation.
+strip_comments() { sed -e "s://.*::" -e "/^[[:space:]]*$/d" "$1" 2>/dev/null; }
+
+compile_or_fail() {
+  echo "Running gradle compileKotlin..."
+  cd "$EXERCISE_DIR" || fail "Can't enter $EXERCISE_DIR"
+  if ! gradle compileKotlin -q --no-watch-fs 2>&1; then
+    fail "Project does not compile. Fix the errors above and try again."
+  fi
+  echo "Project compiles successfully."
+}
+
+WORKFLOW=$(strip_comments "$SRC/DamageClaimWorkflowImpl.kt")
+[[ -n "$WORKFLOW" ]] || fail "Can't find DamageClaimWorkflowImpl.kt — is the exercise still in place?"
+
+if ! grep -qE "leanActivities\.(storeEvidence|prepareClaim)" <<< "$WORKFLOW"; then
+  fail "The pipeline still runs on the full claim. Switch it to leanActivities/leanAnalysis, starting with leanActivities.storeEvidence(claim). See the assignment for the full shape."
+fi
+echo "Lean pipeline in use"
+
+leftovers=$(grep -cE "\bactivities\.(validateClaim|normalizeCustomerName|extractProductMetadata|lookupWarrantyStatus|calculateRepairEstimate|reserveServiceSlot|sendClaimConfirmation)" <<< "$WORKFLOW")
+if [[ "$leftovers" -gt 0 ]]; then
+  echo "Note: $leftovers full-claim Activity call(s) remain. Each one still puts the"
+  echo "      whole claim into History — worth switching those too."
+fi
+
+if grep -q "claim = workingClaim" <<< "$WORKFLOW"; then
+  echo "Note: ClaimResult still returns the full claim. Swap it for"
+  echo "      evidenceRef = summary.evidenceRef so the result carries a pointer."
+fi
+
+compile_or_fail
+echo ""
+echo "✅ The evidence now travels by reference."
+echo "   Re-run and compare history bytes against the baseline."

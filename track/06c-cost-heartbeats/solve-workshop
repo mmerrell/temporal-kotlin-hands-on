@@ -1,0 +1,4 @@
+#!/bin/bash
+cp -r /workspace/solution/src/. /workspace/exercise/src/
+cd /workspace/exercise && gradle compileKotlin -q --no-watch-fs
+echo "Solution applied. Review Config.kt and EvidenceAnalyzer.kt — checkpoint heartbeats, and the timeout that has to outlast them"
