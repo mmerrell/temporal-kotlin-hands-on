@@ -59,7 +59,8 @@ Files are in `/workspace/exercise/src/main/kotlin/fulfillment/`. Look for `TODO(
 
 ### Part A – Create the WarehouseActivities stub
 
-In `InventoryReservationWorkflowImpl.kt`, replace the `null` stub:
+In `InventoryReservationWorkflowImpl.kt`, replace the `TODO(...)` on the
+`warehouseActivities` line. Edit it in place — a second declaration won't compile:
 
 ```kotlin
 private val warehouseActivities: WarehouseActivities = Workflow.newActivityStub(

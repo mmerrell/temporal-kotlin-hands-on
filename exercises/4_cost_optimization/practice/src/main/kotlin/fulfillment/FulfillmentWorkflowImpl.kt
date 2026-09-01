@@ -22,7 +22,9 @@ class FulfillmentWorkflowImpl : FulfillmentWorkflow {
     // TODO Part A: Create a LocalFulfillmentActivities stub using Workflow.newLocalActivityStub().
     //   Use LocalActivityOptions (not ActivityOptions) with a StartToCloseTimeout of 5 seconds.
     //   Local activities run in-process — no round-trip to the Temporal Server for scheduling.
-    private val localActivities: LocalFulfillmentActivities? = null // replace this
+    //   Replace TODO(...) below. Edit that one line — don't add a second
+    //   `localActivities` declaration.
+    private val localActivities: LocalFulfillmentActivities = TODO("Part A: create the Local Activity stub")
 
     override fun processOrder(order: Order): OrderResult {
         log.info("Processing order {}", order.orderId)

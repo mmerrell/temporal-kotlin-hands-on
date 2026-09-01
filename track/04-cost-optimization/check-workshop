@@ -15,7 +15,7 @@ if ! grep -q "newLocalActivityStub" "$WORKFLOW_IMPL"; then
 fi
 pass "Workflow.newLocalActivityStub() used"
 
-if grep -q "localActivities.*= null" "$WORKFLOW_IMPL"; then
+if grep -q "localActivities.*TODO(" "$WORKFLOW_IMPL"; then
   fail "The localActivities field is still unimplemented. Replace it with a real Workflow.newLocalActivityStub() call."
 fi
 pass "localActivities stub initialized"

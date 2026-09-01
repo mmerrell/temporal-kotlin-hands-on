@@ -11,9 +11,12 @@ class FulfillmentWorkflowImpl : FulfillmentWorkflow {
         private val log = Workflow.getLogger(FulfillmentWorkflowImpl::class.java)
     }
 
-    // TODO Part B1: replace this with a real Activity stub.
+    // TODO Part B1: replace TODO(...) below with the real stub.
     //
-    //   private val activities: FulfillmentActivities = Workflow.newActivityStub(
+    // Edit that one line. Don't paste a second `activities` declaration — two of
+    // them in the same class is a compile error.
+    //
+    //   Workflow.newActivityStub(
     //       FulfillmentActivities::class.java,
     //       ActivityOptions.newBuilder()
     //           .setStartToCloseTimeout(Duration.ofSeconds(30))
@@ -29,7 +32,7 @@ class FulfillmentWorkflowImpl : FulfillmentWorkflow {
     // Compare those RetryOptions with MAX_RETRIES and RETRY_DELAY_MS in
     // FulfillmentPipeline.kt. Same policy — but Temporal does the waiting, and it
     // survives the Worker dying mid-retry.
-    private val activities: FulfillmentActivities? = null // replace this
+    private val activities: FulfillmentActivities = TODO("Part B1: create the Activity stub")
 
     override fun processOrder(order: Order): OrderResult {
         log.info("Processing order {}", order.orderId)

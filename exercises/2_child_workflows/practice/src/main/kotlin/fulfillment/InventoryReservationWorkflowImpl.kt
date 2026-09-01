@@ -14,7 +14,9 @@ class InventoryReservationWorkflowImpl : InventoryReservationWorkflow {
     }
 
     // TODO Part A: Create a WarehouseActivities stub with a 30-second StartToCloseTimeout.
-    private val warehouseActivities: WarehouseActivities? = null // replace this
+    //   Replace TODO(...) below. Edit that one line — don't add a second
+    //   `warehouseActivities` declaration.
+    private val warehouseActivities: WarehouseActivities = TODO("Part A: create the WarehouseActivities stub")
 
     override fun reserve(sku: String, quantity: Int): String {
         // TODO Part B: Iterate over WAREHOUSES.

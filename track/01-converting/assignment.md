@@ -104,7 +104,8 @@ where you find out why — leave it alone until then.
 
 ### Part B – The Workflow
 
-In `FulfillmentWorkflowImpl.kt`, replace the `null` stub:
+In `FulfillmentWorkflowImpl.kt`, replace the `TODO(...)` on the `activities` line.
+Edit that line in place — a second `activities` declaration won't compile:
 
 ```kotlin
 private val activities: FulfillmentActivities = Workflow.newActivityStub(

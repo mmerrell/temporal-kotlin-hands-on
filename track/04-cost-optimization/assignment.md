@@ -65,7 +65,8 @@ Look for the two `TODO(...)` markers — one at the field declaration, one insid
 
 ### Part A – Create the Local Activity stub
 
-Replace the `null` stub with a real `LocalFulfillmentActivities` stub.
+Replace the `TODO(...)` on the `localActivities` line with a real stub. Edit that
+line in place — a second `localActivities` declaration won't compile.
 
 The key differences from a regular activity stub:
 - Use `LocalActivityOptions` (not `ActivityOptions`)
