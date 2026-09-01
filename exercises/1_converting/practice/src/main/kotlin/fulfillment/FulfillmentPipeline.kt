@@ -10,6 +10,8 @@ import org.slf4j.LoggerFactory
  *  - State in local variables — if the JVM dies after payment, we have no record
  *  - No visibility into which step we're on
  *  - Double-charge risk: payment succeeded but dispatch threw, caller retries from scratch
+ *  - Every failure is treated identically: a timeout worth retrying and a declined
+ *    card that never will be both get five attempts and four sleeps
  */
 class FulfillmentPipeline {
 
@@ -76,18 +78,24 @@ class FulfillmentPipeline {
 
     // ── Simulated downstream calls ────────────────────────────────────────────
 
+    private var reserveAttempts = 0
+
     private fun reserveInventory(order: Order): String {
-        if (Math.random() < 0.3) throw Exception("Inventory service timeout")
-        return "RES-${order.itemSku}-${System.currentTimeMillis()}"
+        // The warehouse service is flaky under load and times out the first
+        // couple of times. Calling again is the right response.
+        reserveAttempts++
+        if (reserveAttempts < 3) throw Exception("Warehouse service timed out")
+        return "RES-${order.itemSku}-${order.orderId}"
     }
 
     private fun processPayment(order: Order): String {
-        if (Math.random() < 0.2) throw Exception("Payment gateway unavailable")
-        return "PAY-${order.orderId}-${System.currentTimeMillis()}"
+        // A declined card is not a glitch. The retry loop above will hammer it
+        // five times anyway, because it cannot tell the two kinds of failure apart.
+        if (order.totalAmount > 500.0) throw Exception("Card declined: credit limit exceeded")
+        return "PAY-${order.orderId}"
     }
 
     private fun dispatchToFulfillment(order: Order, reservationId: String): String {
-        if (Math.random() < 0.2) throw Exception("Fulfillment API error")
-        return "TRK-${reservationId.hashCode()}-${System.currentTimeMillis()}"
+        return "TRK-${order.orderId}-${reservationId.takeLast(4)}"
     }
 }

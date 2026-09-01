@@ -7,14 +7,20 @@ teaser: Replace a fragile retry loop with Temporal Activities and a durable Work
 notes:
 - type: text
   contents: |-
-    The starting point for this exercise is `FulfillmentPipeline.kt` — a deliberately fragile
-    implementation using `Thread.sleep()` retries and local variable state.
+    `FulfillmentPipeline.kt` is the "before Temporal" version of an order pipeline:
+    reserve inventory, take payment, dispatch. Ninety-five lines, and about sixty of
+    them are retry bookkeeping — three near-identical loops, a `MAX_RETRIES`
+    constant, `Thread.sleep()` between attempts, and state in local variables that
+    vanishes if the JVM dies.
 
-    If the process dies mid-execution, the order is lost. If a step fails after three attempts,
-    the whole pipeline crashes. Retry behavior is hardcoded and invisible.
+    Read its comments before you start. Two of them admit real bugs: a reservation
+    that can never be rolled back, and a customer who can be charged for an order
+    that never ships.
 
-    **Temporal fixes all of this.** Your job is to move the logic into proper
-    Activity implementations and wire them together in a Workflow.
+    There's a subtler problem too. The pipeline treats every failure identically.
+    A warehouse timeout worth retrying and a declined card that will never succeed
+    both get five attempts and four sleeps. Telling those two apart is your job in
+    this exercise, and it's the part Temporal can't decide for you.
 
     Hit **Start** when you're ready.
 tabs:
@@ -46,61 +52,138 @@ enhanced_loading: null
 
 ## Exercise 1: Converting a Workflow
 
-Open **`FulfillmentActivitiesImpl.kt`** and **`FulfillmentWorkflowImpl.kt`** in the Code Editor tab.
-Look for `TODO(...)` markers — they mark everything you need to implement.
+Your work is in **`FulfillmentActivitiesImpl.kt`** and **`FulfillmentWorkflowImpl.kt`**.
+`FulfillmentPipeline.kt` is the code you're replacing — read it first.
 
-> **Note:** The Code Editor gives you syntax highlighting but not autocomplete or inline
-> error checking — use the terminal to run `gradle compileKotlin` any time you want to
-> check your work before clicking Check.
-
-Files are in `/workspace/exercise/src/main/kotlin/fulfillment/`.
+> The Code Editor gives you syntax highlighting but no autocomplete or inline errors.
+> Run `gradle compileKotlin` in a terminal whenever you want to check your work.
 
 ***
 
-### Part A – Implement the three Activities
+### Part A – Two Activities, two kinds of failure
 
-In `FulfillmentActivitiesImpl.kt`, fill in each of the three methods.
-Look at `FulfillmentPipeline.kt` (already open in a tab) to understand what each method should do.
+`dispatchToFulfillment` **is already written** at the bottom of
+`FulfillmentActivitiesImpl.kt`. Read it first — it shows the shape. Then write the
+other two. They fail for genuinely different reasons, and that difference is the
+whole point.
 
-For each method:
-- Replace the `TODO(...)` stub with the actual logic
-- Replace raw `throw Exception(...)` calls with `ApplicationFailure.newFailure(message, type)`
-- Keep the `Math.random()` failure simulation — Temporal will retry it automatically
+**A1 — `reserveInventory`.** The warehouse service times out under load. That's
+transient: the same call a moment later usually works. Make the failure **retryable**:
 
-***
+```kotlin
+throw ApplicationFailure.newFailure("Warehouse service timed out", "InventoryError")
+```
 
-### Part B – Implement the Workflow
+To make the retry visible, fail the first two attempts and succeed on the third.
+An Activity can see which attempt it's on:
 
-In `FulfillmentWorkflowImpl.kt`:
+```kotlin
+val attempt = Activity.getExecutionContext().info.attempt
+```
 
-1. Create `ActivityOptions` with a `StartToCloseTimeout` of **30 seconds**
-2. Create a `FulfillmentActivities` stub via `Workflow.newActivityStub(...)`
-3. Replace the `null` stub for `activities`
-4. In `processOrder()`, call the three activities in sequence and return an `OrderResult`
+**A2 — `processPayment`.** The card is declined because the order exceeds
+`CREDIT_LIMIT`. Retrying a declined card declines it again, five times, slower.
+Make that failure **non-retryable**:
 
-***
+```kotlin
+throw ApplicationFailure.newNonRetryableFailure(
+    "Card declined: ...", "PaymentDeclined")
+```
 
-### Part C – Run it
-
-Once your code compiles, start both processes:
-
-1. Click the [button label="Terminal 1 - Worker" background="#444CE7"](tab-1) tab and start the Worker:
-
-   ```bash,run
-   gradle runWorker
-   ```
-
-2. Click the [button label="Terminal 2 - Starter" background="#444CE7"](tab-2) tab and run the Starter:
-
-   ```bash,run
-   gradle runStarter
-   ```
-
-Open the [button label="Temporal Web UI" background="#444CE7"](tab-3) tab and find workflow `fulfillment-ORD-1001`.
-Try killing the Worker mid-execution (Ctrl+C in Terminal 1) and restarting it — what happens?
+Temporal will do exactly what you tell it, including retrying something pointless
+thirty times. Choosing correctly here is the actual skill.
 
 ***
 
-Click **Check** when you think you're done. The checker will verify your source code and confirm the project compiles.
+### Part B – The Workflow
 
-> **Stuck?** Click **Solve** to apply the reference solution and see a working implementation.
+In `FulfillmentWorkflowImpl.kt`, replace the `null` stub:
+
+```kotlin
+private val activities: FulfillmentActivities = Workflow.newActivityStub(
+    FulfillmentActivities::class.java,
+    ActivityOptions.newBuilder()
+        .setStartToCloseTimeout(Duration.ofSeconds(30))
+        .setRetryOptions(
+            RetryOptions.newBuilder()
+                .setInitialInterval(Duration.ofSeconds(2))
+                .setMaximumAttempts(5)
+                .build()
+        )
+        .build()
+)
+```
+
+Compare those `RetryOptions` with `MAX_RETRIES = 5` and `RETRY_DELAY_MS = 2000` in
+`FulfillmentPipeline.kt`. Identical policy — except Temporal does the waiting, and
+the retry survives the Worker being killed halfway through it.
+
+Then call the three activities in sequence and return an `OrderResult`:
+
+```kotlin
+val reservationId = activities.reserveInventory(order)
+val paymentConfirmation = activities.processPayment(order)
+val trackingNumber = activities.dispatchToFulfillment(order, reservationId)
+```
+
+Note what you did *not* write: no try/catch, no loop, no `Thread.sleep`, no attempt
+counter. That's the sixty lines.
+
+***
+
+### Part C – The retryable failure
+
+Start the Worker in [button label="Terminal 1 - Worker" background="#444CE7"](tab-1):
+
+```bash,run
+gradle runWorker
+```
+
+Then in [button label="Terminal 2 - Starter" background="#444CE7"](tab-2):
+
+```bash,run
+gradle runStarter
+```
+
+Watch the Worker terminal: `reserveInventory` logs attempt 1, attempt 2, attempt 3,
+with a pause between each. The order completes.
+
+Now open `fulfillment-ORD-1001` in the
+[button label="Temporal Web UI" background="#444CE7"](tab-3) and count the events.
+**There is no record of the two failures.** You'll find one
+`ActivityTaskScheduled` for `ReserveInventory`, one `ActivityTaskStarted` — and that
+started event says `attempt: 3`.
+
+Retries don't append to history. History records what happened and which attempt
+managed it, not every try along the way. That's why a heavily-retried Activity
+doesn't bloat your history.
+
+***
+
+### Part D – The non-retryable failure
+
+Same code, an order over the credit limit:
+
+```bash,run
+gradle runDeclined
+```
+
+The Starter prints a failure instead of a result. Open `fulfillment-ORD-1002` and
+compare it with the run before:
+
+- `ReserveInventory` retried and succeeded, exactly as before
+- `ProcessPayment` has an **`ActivityTaskFailed`** event — a terminal failure *is*
+  recorded — carrying `retryState: RETRY_STATE_NON_RETRYABLE_FAILURE`
+- `DispatchToFulfillment` never ran at all
+
+One activity failed twice and the workflow shrugged. The other failed once and the
+workflow stopped. The only difference is which `ApplicationFailure` you chose.
+
+**Then try this:** start another order and kill the Worker (Ctrl+C in Terminal 1)
+while `reserveInventory` is still retrying. Restart it with `gradle runWorker`. The
+workflow picks up mid-retry and finishes. The pipeline you deleted could not do
+that — its retry state lived in a local variable.
+
+***
+
+Click **Check** when done, or **Solve** to see the reference solution.

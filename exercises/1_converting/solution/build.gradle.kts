@@ -36,3 +36,11 @@ tasks.register<JavaExec>("runStarter") {
     mainClass.set("fulfillment.StarterKt")
     classpath = sourceSets["main"].runtimeClasspath
 }
+
+tasks.register<JavaExec>("runDeclined") {
+    group = "application"
+    description = "Runs the Starter with an order that exceeds the credit limit"
+    mainClass.set("fulfillment.StarterKt")
+    classpath = sourceSets["main"].runtimeClasspath
+    args = listOf("declined")
+}

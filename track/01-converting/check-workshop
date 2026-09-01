@@ -1,42 +1,80 @@
 #!/bin/bash
 EXERCISE_DIR="/workspace/exercise"
-ACTIVITIES_IMPL="$EXERCISE_DIR/src/main/kotlin/fulfillment/FulfillmentActivitiesImpl.kt"
-WORKFLOW_IMPL="$EXERCISE_DIR/src/main/kotlin/fulfillment/FulfillmentWorkflowImpl.kt"
+SRC="$EXERCISE_DIR/src/main/kotlin/fulfillment"
+ACTIVITIES_IMPL="$SRC/FulfillmentActivitiesImpl.kt"
+WORKFLOW_IMPL="$SRC/FulfillmentWorkflowImpl.kt"
 
 fail() { echo "FAIL: $1"; exit 1; }
 pass() { echo "PASS: $1"; }
 
-if grep -q "TODO(" "$ACTIVITIES_IMPL"; then
-  fail "FulfillmentActivitiesImpl still has unimplemented stubs (TODO(...) found). Implement all three activity methods."
-fi
-pass "Activity stubs replaced"
+# The TODO blocks quote the exact calls being looked for, so match against a
+# comment-stripped copy or the instructions read as a finished implementation.
+strip_comments() { sed -e 's://.*::' -e '/^[[:space:]]*$/d' "$1" 2>/dev/null; }
+ACTS=$(strip_comments "$ACTIVITIES_IMPL")
+WF=$(strip_comments "$WORKFLOW_IMPL")
 
-if ! grep -q "ApplicationFailure" "$ACTIVITIES_IMPL"; then
-  fail "FulfillmentActivitiesImpl should use ApplicationFailure.newFailure() for error cases, not raw exception throws."
-fi
-pass "ApplicationFailure used in activities"
+[[ -n "$ACTS" ]] || fail "Can't find FulfillmentActivitiesImpl.kt — is the exercise still in place?"
 
-if ! grep -q "Workflow.newActivityStub" "$WORKFLOW_IMPL"; then
-  fail "FulfillmentWorkflowImpl is missing Workflow.newActivityStub(...). Create a FulfillmentActivities stub."
+if grep -q "TODO(" <<< "$ACTS"; then
+  fail "FulfillmentActivitiesImpl still has unimplemented stubs. Implement reserveInventory (Part A1) and processPayment (Part A2)."
 fi
-pass "Activity stub created in workflow"
+pass "Both activities implemented"
 
-if ! grep -q "setStartToCloseTimeout\|StartToCloseTimeout" "$WORKFLOW_IMPL"; then
-  fail "FulfillmentWorkflowImpl is missing a StartToCloseTimeout on the ActivityOptions."
+# A1: the transient failure should be retryable
+if ! grep -q "ApplicationFailure.newFailure" <<< "$ACTS"; then
+  fail "reserveInventory should raise a RETRYABLE failure for the warehouse timeout: ApplicationFailure.newFailure(\"Warehouse service timed out\", \"InventoryError\")"
+fi
+pass "reserveInventory raises a retryable failure"
+
+# A2: the business failure should be non-retryable — the heart of the exercise
+if ! grep -q "newNonRetryableFailure" <<< "$ACTS"; then
+  fail "processPayment should raise a NON-retryable failure for a declined card. Retrying a decline just declines again — use ApplicationFailure.newNonRetryableFailure(message, \"PaymentDeclined\"). This distinction is the point of Part A."
+fi
+pass "processPayment raises a non-retryable failure"
+
+if ! grep -q "info.attempt\|getAttempt()" <<< "$ACTS"; then
+  echo "Note: reserveInventory doesn't look at the attempt number, so it may fail"
+  echo "      forever or never. Part A1 suggests failing attempts 1-2 and succeeding"
+  echo "      on the third so the retry is visible."
+fi
+
+[[ -n "$WF" ]] || fail "Can't find FulfillmentWorkflowImpl.kt"
+
+if ! grep -q "Workflow.newActivityStub" <<< "$WF"; then
+  fail "FulfillmentWorkflowImpl is missing Workflow.newActivityStub(...). See Part B."
+fi
+pass "Activity stub created"
+
+if ! grep -q "StartToCloseTimeout" <<< "$WF"; then
+  fail "The ActivityOptions need a StartToCloseTimeout."
 fi
 pass "StartToCloseTimeout configured"
 
-if grep -q "TODO(" "$WORKFLOW_IMPL"; then
-  fail "FulfillmentWorkflowImpl.processOrder() is still unimplemented. Call the activities and return an OrderResult."
+if ! grep -q "RetryOptions" <<< "$WF"; then
+  fail "The ActivityOptions are missing RetryOptions. Part B asks you to express the pipeline's MAX_RETRIES/RETRY_DELAY_MS as a retry policy."
 fi
-pass "processOrder returns a result"
+pass "RetryOptions configured"
+
+for m in reserveInventory processPayment dispatchToFulfillment; do
+  if ! grep -q "activities\.$m" <<< "$WF"; then
+    fail "processOrder() never calls activities.$m(). Part B calls all three in sequence."
+  fi
+done
+pass "All three activities called in the workflow"
+
+if grep -q "TODO(" <<< "$WF"; then
+  fail "processOrder() is still unimplemented."
+fi
+pass "processOrder implemented"
 
 echo "Running gradle compileKotlin..."
-cd "$EXERCISE_DIR"
-if ! gradle compileKotlin -q 2>&1; then
-  fail "Project does not compile. Fix any compilation errors above and try again."
+cd "$EXERCISE_DIR" || fail "Can't enter $EXERCISE_DIR"
+if ! gradle compileKotlin -q --no-watch-fs 2>&1; then
+  fail "Project does not compile. Fix the errors above and try again."
 fi
 pass "Project compiles successfully"
 
 echo ""
-echo "All checks passed! Run the worker and starter to see durable execution in action."
+echo "✅ Run both paths and compare their histories:"
+echo "     gradle runStarter    — reserveInventory retries, order completes"
+echo "     gradle runDeclined   — payment fails once, workflow stops"
