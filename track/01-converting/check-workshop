@@ -20,23 +20,23 @@ if grep -q "TODO(" <<< "$ACTS"; then
 fi
 pass "Both activities implemented"
 
-# A1: the transient failure should be retryable
-if ! grep -q "ApplicationFailure.newFailure" <<< "$ACTS"; then
-  fail "reserveInventory should raise a RETRYABLE failure for the warehouse timeout: ApplicationFailure.newFailure(\"Warehouse service timed out\", \"InventoryError\")"
+# A1: reserveInventory just calls the warehouse and lets the failure propagate
+if ! grep -q "WarehouseClient.reserve" <<< "$ACTS"; then
+  fail "reserveInventory should call WarehouseClient.reserve(order.itemSku, order.quantity, order.orderId) and return the result. See Part A1."
 fi
-pass "reserveInventory raises a retryable failure"
+pass "reserveInventory calls the warehouse"
+
+if grep -qE "catch|runCatching" <<< "$ACTS"; then
+  echo "Note: there's a catch in this file. reserveInventory should let the warehouse"
+  echo "      timeout propagate — Temporal retries failed Activities by default, so"
+  echo "      catching it is how you'd accidentally turn retry off."
+fi
 
 # A2: the business failure should be non-retryable — the heart of the exercise
 if ! grep -q "newNonRetryableFailure" <<< "$ACTS"; then
-  fail "processPayment should raise a NON-retryable failure for a declined card. Retrying a decline just declines again — use ApplicationFailure.newNonRetryableFailure(message, \"PaymentDeclined\"). This distinction is the point of Part A."
+  fail "processPayment still uses a retryable failure. Part D asks you to run it, watch Temporal decline the same card five times, and then switch to ApplicationFailure.newNonRetryableFailure(message, \"PaymentDeclined\"). Did you get to Part D?"
 fi
 pass "processPayment raises a non-retryable failure"
-
-if ! grep -q "info.attempt\|getAttempt()" <<< "$ACTS"; then
-  echo "Note: reserveInventory doesn't look at the attempt number, so it may fail"
-  echo "      forever or never. Part A1 suggests failing attempts 1-2 and succeeding"
-  echo "      on the third so the retry is visible."
-fi
 
 [[ -n "$WF" ]] || fail "Can't find FulfillmentWorkflowImpl.kt"
 

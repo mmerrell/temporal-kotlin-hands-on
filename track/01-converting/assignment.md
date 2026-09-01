@@ -17,10 +17,13 @@ notes:
     that can never be rolled back, and a customer who can be charged for an order
     that never ships.
 
-    There's a subtler problem too. The pipeline treats every failure identically.
-    A warehouse timeout worth retrying and a declined card that will never succeed
-    both get five attempts and four sleeps. Telling those two apart is your job in
-    this exercise, and it's the part Temporal can't decide for you.
+    There's a subtler problem, and it's the one this exercise is about. The pipeline
+    treats every failure identically. A warehouse timeout worth retrying and a
+    declined card that will never succeed both get five attempts and four sleeps.
+
+    Temporal retries failed Activities automatically, so it makes that same mistake
+    by default — unless you tell it which failures aren't worth retrying. That
+    judgment is the part no framework can make for you.
 
     Hit **Start** when you're ready.
 tabs:
@@ -53,45 +56,49 @@ enhanced_loading: null
 ## Exercise 1: Converting a Workflow
 
 Your work is in **`FulfillmentActivitiesImpl.kt`** and **`FulfillmentWorkflowImpl.kt`**.
-`FulfillmentPipeline.kt` is the code you're replacing — read it first.
+Read `FulfillmentPipeline.kt` first — it's the code you're replacing.
 
 > The Code Editor gives you syntax highlighting but no autocomplete or inline errors.
 > Run `gradle compileKotlin` in a terminal whenever you want to check your work.
 
 ***
 
-### Part A – Two Activities, two kinds of failure
+### Part A – Two Activities
 
 `dispatchToFulfillment` **is already written** at the bottom of
-`FulfillmentActivitiesImpl.kt`. Read it first — it shows the shape. Then write the
-other two. They fail for genuinely different reasons, and that difference is the
-whole point.
+`FulfillmentActivitiesImpl.kt`. Read it first — it shows the shape.
 
-**A1 — `reserveInventory`.** The warehouse service times out under load. That's
-transient: the same call a moment later usually works. Make the failure **retryable**:
+**A1 — `reserveInventory`.** Call the warehouse and return the reservation:
 
 ```kotlin
-throw ApplicationFailure.newFailure("Warehouse service timed out", "InventoryError")
+log.info("Reserving {} x {} for order {}", order.quantity, order.itemSku, order.orderId)
+return WarehouseClient.reserve(order.itemSku, order.quantity, order.orderId)
 ```
 
-To make the retry visible, fail the first two attempts and succeed on the third.
-An Activity can see which attempt it's on:
+That's the whole method. `WarehouseClient` is a stand-in for the warehouse's API,
+and like a lot of real ones it times out under load — open `WarehouseClient.kt` and
+you'll see it fail the first two attempts before succeeding.
+
+**Do not catch that exception.** Let it propagate. You aren't adding retry
+behaviour; you're inheriting it, and for a transient infrastructure failure that's
+the right answer.
+
+**A2 — `processPayment`.** Decline anything over `CREDIT_LIMIT`:
 
 ```kotlin
-val attempt = Activity.getExecutionContext().info.attempt
+log.info("Charging {} to customer {}", order.totalAmount, order.customerId)
+
+if (order.totalAmount > CREDIT_LIMIT) {
+    throw ApplicationFailure.newFailure(
+        "Card declined: order total ${order.totalAmount} exceeds credit limit $CREDIT_LIMIT",
+        "PaymentDeclined")
+}
+
+return "PAY-${order.orderId}"
 ```
 
-**A2 — `processPayment`.** The card is declined because the order exceeds
-`CREDIT_LIMIT`. Retrying a declined card declines it again, five times, slower.
-Make that failure **non-retryable**:
-
-```kotlin
-throw ApplicationFailure.newNonRetryableFailure(
-    "Card declined: ...", "PaymentDeclined")
-```
-
-Temporal will do exactly what you tell it, including retrying something pointless
-thirty times. Choosing correctly here is the actual skill.
+Write it exactly like that, with `newFailure`. It's the wrong choice. Part D is
+where you find out why — leave it alone until then.
 
 ***
 
@@ -131,7 +138,7 @@ counter. That's the sixty lines.
 
 ***
 
-### Part C – The retryable failure
+### Part C – Retry you got for free
 
 Start the Worker in [button label="Terminal 1 - Worker" background="#444CE7"](tab-1):
 
@@ -145,44 +152,64 @@ Then in [button label="Terminal 2 - Starter" background="#444CE7"](tab-2):
 gradle runStarter
 ```
 
-Watch the Worker terminal: `reserveInventory` logs attempt 1, attempt 2, attempt 3,
-with a pause between each. The order completes.
+Watch the Worker log the warehouse call on attempt 1, attempt 2, attempt 3, pausing
+between each. The order completes. You wrote no retry code at all.
 
 Now open `fulfillment-ORD-1001` in the
 [button label="Temporal Web UI" background="#444CE7"](tab-3) and count the events.
-**There is no record of the two failures.** You'll find one
-`ActivityTaskScheduled` for `ReserveInventory`, one `ActivityTaskStarted` — and that
-started event says `attempt: 3`.
+**The two failures aren't there.** One `ActivityTaskScheduled` for
+`ReserveInventory`, one `ActivityTaskStarted` — and that started event says
+`attempt: 3`.
 
 Retries don't append to history. History records what happened and which attempt
-managed it, not every try along the way. That's why a heavily-retried Activity
-doesn't bloat your history.
+managed it, not every try along the way. A heavily-retried Activity doesn't bloat
+your history.
 
 ***
 
-### Part D – The non-retryable failure
+### Part D – Retry you didn't want
 
-Same code, an order over the credit limit:
+Now the order that gets declined:
 
 ```bash,run
 gradle runDeclined
 ```
 
-The Starter prints a failure instead of a result. Open `fulfillment-ORD-1002` and
-compare it with the run before:
+**Watch the Worker terminal and wait.** The card is declined, and Temporal does
+what you told it to: it charges again. And again. Five charge attempts across about
+thirty seconds of backoff — the whole run takes roughly forty seconds — every one of
+them declined for exactly the reason it was declined the first time.
 
-- `ReserveInventory` retried and succeeded, exactly as before
-- `ProcessPayment` has an **`ActivityTaskFailed`** event — a terminal failure *is*
-  recorded — carrying `retryState: RETRY_STATE_NON_RETRYABLE_FAILURE`
-- `DispatchToFulfillment` never ran at all
+Count the `Charging ...` lines in the Worker log. There will be five.
 
-One activity failed twice and the workflow shrugged. The other failed once and the
-workflow stopped. The only difference is which `ApplicationFailure` you chose.
+That's the pipeline's bug, faithfully reproduced. `newFailure` means "worth
+retrying," and a declined card never is.
 
-**Then try this:** start another order and kill the Worker (Ctrl+C in Terminal 1)
-while `reserveInventory` is still retrying. Restart it with `gradle runWorker`. The
-workflow picks up mid-retry and finishes. The pipeline you deleted could not do
-that — its retry state lived in a local variable.
+Fix it — one call in `processPayment`:
+
+```kotlin
+throw ApplicationFailure.newNonRetryableFailure(
+    "Card declined: order total ${order.totalAmount} exceeds credit limit $CREDIT_LIMIT",
+    "PaymentDeclined")
+```
+
+Restart the Worker and run `gradle runDeclined` again. It fails instantly.
+
+Open `fulfillment-ORD-1002` and compare against the first run:
+
+- `ReserveInventory` retried and succeeded, exactly as before — that failure is
+  still retryable, and still should be
+- `ProcessPayment` has one `ActivityTaskFailed` carrying
+  `retryState: RETRY_STATE_NON_RETRYABLE_FAILURE`
+- `DispatchToFulfillment` never ran
+
+Two activities, two kinds of failure, one word of difference. Temporal's default is
+to retry; deciding what shouldn't is your job.
+
+**One more thing:** start another order and kill the Worker (Ctrl+C in Terminal 1)
+while the warehouse is still timing out. Restart it with `gradle runWorker`. The
+workflow picks up mid-retry and finishes. The pipeline you deleted couldn't — its
+retry state was a local variable.
 
 ***
 

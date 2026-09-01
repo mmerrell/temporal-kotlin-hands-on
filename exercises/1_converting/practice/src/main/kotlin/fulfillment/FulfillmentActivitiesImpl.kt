@@ -1,6 +1,5 @@
 package fulfillment
 
-import io.temporal.activity.Activity
 import io.temporal.failure.ApplicationFailure
 import org.slf4j.LoggerFactory
 
@@ -14,46 +13,41 @@ class FulfillmentActivitiesImpl : FulfillmentActivities {
     }
 
     override fun reserveInventory(order: Order): String {
-        // TODO Part A1
+        // TODO Part A1 — call the warehouse, and do nothing about failure.
         //
-        // In FulfillmentPipeline.kt, reserving inventory can fail because the
-        // warehouse service times out. That's a transient infrastructure problem —
-        // the same call a moment later usually works.
+        //   log.info("Reserving {} x {} for order {}", order.quantity, order.itemSku, order.orderId)
+        //   return WarehouseClient.reserve(order.itemSku, order.quantity, order.orderId)
         //
-        // Implement it here, and make the failure RETRYABLE:
+        // WarehouseClient throws when the service times out (see WarehouseClient.kt).
+        // Let that exception propagate — don't catch it, don't wrap it.
         //
-        //     throw ApplicationFailure.newFailure("Warehouse service timed out", "InventoryError")
-        //
-        // To make the retry visible, fail the first two attempts and succeed on the
-        // third. An Activity can see which attempt it's on:
-        //
-        //     val attempt = Activity.getExecutionContext().info.attempt
-        //
-        // Return a reservation id, e.g. "RES-${order.itemSku}-${order.orderId}"
+        // Temporal retries a failed Activity by default. You are not adding retry
+        // behaviour here; you are inheriting it, which is the correct answer for a
+        // transient infrastructure failure.
         TODO("Part A1: implement reserveInventory")
     }
 
     override fun processPayment(order: Order): String {
-        // TODO Part A2
+        // TODO Part A2 — decline orders over CREDIT_LIMIT.
         //
-        // Payment fails for a completely different reason: the card is declined
-        // because the order exceeds CREDIT_LIMIT. Retrying a declined card just
-        // declines it again, five times, slower.
+        //   log.info("Charging {} to customer {}", order.totalAmount, order.customerId)
         //
-        // Implement it here, and make that failure NON-RETRYABLE:
+        //   if (order.totalAmount > CREDIT_LIMIT) {
+        //       throw ApplicationFailure.newFailure(
+        //           "Card declined: order total ${order.totalAmount} exceeds credit limit $CREDIT_LIMIT",
+        //           "PaymentDeclined")
+        //   }
         //
-        //     throw ApplicationFailure.newNonRetryableFailure(message, "PaymentDeclined")
+        //   return "PAY-${order.orderId}"
         //
-        // Return a payment confirmation, e.g. "PAY-${order.orderId}"
-        //
-        // Deciding which failures are worth retrying is the real work here. Temporal
-        // will do exactly what you tell it, including retrying something pointless.
+        // Write it exactly like that for now, with newFailure. It is the wrong
+        // choice and Part D is where you find out why — don't fix it yet.
         TODO("Part A2: implement processPayment")
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // Worked example: this one is already written. Read it before you write the
-    // two above — it shows the shape an Activity takes.
+    // Worked example: already written. Read it before you write the two above —
+    // it shows the shape an Activity takes.
     // ─────────────────────────────────────────────────────────────────────────
     override fun dispatchToFulfillment(order: Order, reservationId: String): String {
         log.info("Dispatching order {} against reservation {}", order.orderId, reservationId)

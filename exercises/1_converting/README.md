@@ -3,7 +3,8 @@
 During this exercise, you will:
 
 - Identify the problems with manual retry loops and local variable state
-- Tell a transient failure apart from a business failure, and classify each correctly
+- See that Temporal retries failed Activities by default, so you inherit retry
+- Recognise the failures that should NOT be retried, and opt out of them
 - Express a retry policy as configuration instead of a loop
 - See why a retried Activity doesn't bloat Workflow History
 
@@ -20,52 +21,52 @@ temporal server start-dev
 
 Open two terminal windows and `cd` into `1_converting/practice/`.
 
-## Part A: Two Activities, two kinds of failure
+## Part A: Two Activities
 
-`dispatchToFulfillment` is already written — read it first, it shows the shape.
-Then implement the other two in `FulfillmentActivitiesImpl.kt`. They fail for
-different reasons, and the difference is the point:
+`dispatchToFulfillment` is already written — read it first. Then:
 
-- **`reserveInventory`** — the warehouse service times out. Transient, so the
-  failure is **retryable**: `ApplicationFailure.newFailure(...)`. Fail attempts 1-2
-  and succeed on the third, using `Activity.getExecutionContext().info.attempt`,
-  so the retry is visible.
-- **`processPayment`** — the card is declined above `CREDIT_LIMIT`. Retrying a
-  decline just declines again, so the failure is **non-retryable**:
-  `ApplicationFailure.newNonRetryableFailure(...)`.
+- **`reserveInventory`** — call `WarehouseClient.reserve(...)` and return it. That's
+  the whole method. The client times out on the first two attempts (see
+  `WarehouseClient.kt`); let the exception propagate. Temporal retries failed
+  Activities by default, which is right for a transient failure.
+- **`processPayment`** — decline over `CREDIT_LIMIT`, using
+  `ApplicationFailure.newFailure(...)` for now. That's deliberately the wrong
+  choice; Part D is where you see why.
 
 ## Part B: The Workflow
 
-In `FulfillmentWorkflowImpl.kt`, create the stub with a 30-second
-`StartToCloseTimeout` and `RetryOptions` of `maximumAttempts(5)` /
-`initialInterval(2s)` — the same policy as the pipeline's `MAX_RETRIES` and
-`RETRY_DELAY_MS`, except Temporal does the waiting and it survives a Worker
-restart. Then call the three activities in sequence.
+Create the stub with a 30-second `StartToCloseTimeout` and `RetryOptions` of
+`maximumAttempts(5)` / `initialInterval(2s)` — the same policy as the pipeline's
+`MAX_RETRIES` and `RETRY_DELAY_MS`, except Temporal does the waiting and it
+survives a Worker restart. Then call the three activities in sequence.
 
-## Part C: Compare the two paths
+## Part C: Retry you got for free
 
 ```bash
-# Terminal 1
-gradle runWorker
+gradle runWorker      # terminal 1
+gradle runStarter     # terminal 2
+```
 
-# Terminal 2
-gradle runStarter     # ORD-1001, under the limit
+The warehouse times out twice and succeeds on the third attempt. You wrote no retry
+code. In `fulfillment-ORD-1001` there is **no record of the two failures** — one
+`ActivityTaskScheduled`, one `ActivityTaskStarted` saying `attempt: 3`. History
+records the outcome and which attempt produced it, not every try.
+
+## Part D: Retry you didn't want
+
+```bash
 gradle runDeclined    # ORD-1002, over the limit
 ```
 
-In `fulfillment-ORD-1001` there is **no record of the two failed attempts**. One
-`ActivityTaskScheduled`, one `ActivityTaskStarted` — and the started event says
-`attempt: 3`. Retries don't append to history; history records the outcome and
-which attempt produced it.
+Watch it decline the same card five times across ~30s of backoff (~40s for the
+whole run). That's the
+pipeline's bug reproduced: `newFailure` means "worth retrying," and a decline never
+is. Switch to `newNonRetryableFailure`, restart the Worker, run it again — it fails
+instantly, and `ProcessPayment` carries
+`retryState: RETRY_STATE_NON_RETRYABLE_FAILURE` while `DispatchToFulfillment` never
+runs.
 
-In `fulfillment-ORD-1002`, `ProcessPayment` has an `ActivityTaskFailed` event
-carrying `retryState: RETRY_STATE_NON_RETRYABLE_FAILURE`, and
-`DispatchToFulfillment` never ran. A terminal failure *is* recorded.
-
-One activity failed twice and the workflow shrugged; the other failed once and the
-workflow stopped. The only difference is which `ApplicationFailure` was chosen.
-
-**Try this:** kill the Worker (Ctrl+C) while `reserveInventory` is retrying, then
+**Try this:** kill the Worker (Ctrl+C) while the warehouse is still timing out, then
 restart it. The workflow resumes mid-retry. The pipeline couldn't — its retry state
 was a local variable.
 
