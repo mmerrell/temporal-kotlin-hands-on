@@ -1,5 +1,6 @@
 ---
 slug: cost-payloads
+id: uvudqoroy0gh
 type: challenge
 title: 'Exercise 6b: Carry a Reference, Not the Document'
 teaser: Move a few hundred KB of evidence out of Workflow History without changing
@@ -21,23 +22,28 @@ notes:
 
     Hit **Start** when you're ready.
 tabs:
-- title: Code Editor
+- id: 0uhvvbyhemds
+  title: Code Editor
   type: code
   hostname: workshop
   path: /workspace/exercise
-- title: Terminal 1 - Worker
+- id: trzrvkb05mrn
+  title: Terminal 1 - Worker
   type: terminal
   hostname: workshop
   workdir: /workspace/exercise
-- title: Terminal 2 - Starter
+- id: 0k0lhtb6jg3t
+  title: Terminal 2 - Starter
   type: terminal
   hostname: workshop
   workdir: /workspace/exercise
-- title: Terminal 3 - Temporal CLI
+- id: rjo4z8tzh8qh
+  title: Terminal 3 - Temporal CLI
   type: terminal
   hostname: workshop
   workdir: /workspace/exercise
-- title: Temporal Web UI
+- id: xvo0uabkgmam
+  title: Temporal Web UI
   type: service
   hostname: workshop
   path: /

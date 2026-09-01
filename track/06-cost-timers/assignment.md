@@ -1,5 +1,6 @@
 ---
 slug: cost-timers
+id: yvpd020yibst
 type: challenge
 title: 'Exercise 6a: One Wait Instead of Sixty Timers'
 teaser: Measure what a single claim costs, then replace a polling loop with one wait.
@@ -22,23 +23,28 @@ notes:
     In this challenge you'll measure the baseline and fix the cheapest problem to
     fix. Hit **Start** when you're ready.
 tabs:
-- title: Code Editor
+- id: 2w4fpy1mvgck
+  title: Code Editor
   type: code
   hostname: workshop
   path: /workspace/exercise
-- title: Terminal 1 - Worker
+- id: irflfswyekzm
+  title: Terminal 1 - Worker
   type: terminal
   hostname: workshop
   workdir: /workspace/exercise
-- title: Terminal 2 - Starter
+- id: yzfhjixbgryj
+  title: Terminal 2 - Starter
   type: terminal
   hostname: workshop
   workdir: /workspace/exercise
-- title: Terminal 3 - Temporal CLI
+- id: nf40bcfwngvy
+  title: Terminal 3 - Temporal CLI
   type: terminal
   hostname: workshop
   workdir: /workspace/exercise
-- title: Temporal Web UI
+- id: a0ahti6pqsbd
+  title: Temporal Web UI
   type: service
   hostname: workshop
   path: /

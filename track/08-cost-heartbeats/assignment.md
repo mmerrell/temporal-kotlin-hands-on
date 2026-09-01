@@ -1,5 +1,6 @@
 ---
 slug: cost-heartbeats
+id: dsixyqwmillh
 type: challenge
 title: 'Exercise 6c: Heartbeat on Progress, Not the Clock'
 teaser: Tune a long-running Activity's heartbeat to what failure detection actually
@@ -21,23 +22,28 @@ notes:
 
     Hit **Start** when you're ready.
 tabs:
-- title: Code Editor
+- id: pyhlmuonaaay
+  title: Code Editor
   type: code
   hostname: workshop
   path: /workspace/exercise
-- title: Terminal 1 - Worker
+- id: kyz7m799af1j
+  title: Terminal 1 - Worker
   type: terminal
   hostname: workshop
   workdir: /workspace/exercise
-- title: Terminal 2 - Starter
+- id: pzextlhsfrxn
+  title: Terminal 2 - Starter
   type: terminal
   hostname: workshop
   workdir: /workspace/exercise
-- title: Terminal 3 - Temporal CLI
+- id: anjsywtllpgp
+  title: Terminal 3 - Temporal CLI
   type: terminal
   hostname: workshop
   workdir: /workspace/exercise
-- title: Temporal Web UI
+- id: lv9qhyujiosj
+  title: Temporal Web UI
   type: service
   hostname: workshop
   path: /
